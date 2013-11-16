@@ -35,6 +35,7 @@
 import MySQLdb
 import _mysql_exceptions
 from optparse import OptionParser
+import sys
 
 
 def getOptions():
@@ -110,12 +111,11 @@ def create_tables(db, connector):
 
 
 def insert_identity(cursor_ids, upeople_id, field, field_type):
-    if (len(search_identity(cursor_ids, field)) > 1):
+    if (len(search_identity(cursor_ids, field)) > 0):
         return
     query = "INSERT INTO identities (upeople_id, identity, type)" + \
-            "VALUES (%s, %s, %s);"
+            "VALUES (%s, %s, %s)"
     cursor_ids.execute(query, (upeople_id, field, field_type))
-
 
 def insert_upeople(cursor_ids, cursor_ds, people_id, field, field_type):
     # Insert in people_upeople, identities and upeople (new identitiy)
