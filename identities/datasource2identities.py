@@ -32,12 +32,9 @@
 # If not, a new entry in identities table is generated and its associated link
 # to the people_upeople table.
 
-
 import MySQLdb
 import _mysql_exceptions
-import sys
-import re
-from optparse import OptionGroup, OptionParser
+from optparse import OptionParser
 
 
 def getOptions():
@@ -112,26 +109,15 @@ def create_tables(db, connector):
     return
 
 
-def insert_identity(cursor_ids, cursor_ds, upeople_id,
-                    name, email, user_id):
-    if name is not None and name != '':
-        query = "INSERT INTO identities(upeople_id, identity, type)" + \
-                "VALUES ( %s, %s, 'name')"
-        cursor_ids.execute(query, (upeople_id, name))
-
-    if email is not None and email != '':
-        query = "INSERT INTO identities(upeople_id, identity, type)" + \
-                "VALUES(%s, %s, 'email');"
-        cursor_ids.execute(query, (upeople_id, email))
-
-    if user_id is not None and user_id != '':
-        query = "INSERT INTO identities(upeople_id, identity, type)" + \
-                "VALUES( %s, %s, 'user_id');"
-        cursor_ids.execute(query, (upeople_id, user_id))
+def insert_identity(cursor_ids, upeople_id, field, field_type):
+    if (len(search_identity(cursor_ids, field)) > 1):
+        return
+    query = "INSERT INTO identities (upeople_id, identity, type)" + \
+            "VALUES (%s, %s, %s);"
+    cursor_ids.execute(query, (upeople_id, field, field_type))
 
 
-def insert_upeople(cursor_ids, cursor_ds, people_id,
-                   name, email, user_id):
+def insert_upeople(cursor_ids, cursor_ds, people_id, field, field_type):
     # Insert in people_upeople, identities and upeople (new identitiy)
 
     # Max (upeople_)id FROM upeople table
@@ -139,33 +125,14 @@ def insert_upeople(cursor_ids, cursor_ds, people_id,
     results = execute_query(cursor_ids, query)
     upeople_id = int(results[0][0]) + 1
 
-    uidentifier = upeople_id
-    if email and email != 'None':
-        uidentifier = email
-    elif name and name != 'None':
-        uidentifier = name
-    elif user_id and user_id != 'None':
-        uidentifier = user_id
-
     query = "INSERT INTO upeople (id, identifier) VALUES (%s, %s)"
-    cursor_ids.execute(query, (upeople_id, uidentifier))
+    cursor_ids.execute(query, (upeople_id, field))
 
-    if name is not None and name != 'None' and name != '':
-        query = "INSERT INTO identities(upeople_id, identity, type)" + \
-                "VALUES (%s, %s, 'name');"
-        cursor_ids.execute(query, (upeople_id, name))
-
-    if email is not None and email != 'None' and email != '':
-        query = "INSERT INTO identities (upeople_id, identity, type)" + \
-                "VALUES (%s, %s, 'email');"
-        cursor_ids.execute(query, (upeople_id, email))
-
-    if user_id is not None and user_id != 'None' and user_id != '':
-        query = "INSERT INTO identities (upeople_id, identity, type)" + \
-                "VALUES (%s, %s, 'user_id');"
-        cursor_ids.execute(query, (upeople_id, user_id))
+    insert_identity(cursor_ids, upeople_id, field, field_type)
 
     reuse_identity(cursor_ds, people_id, upeople_id)
+
+    return upeople_id
 
 
 def search_identity(cursor_ids, field):
@@ -183,13 +150,31 @@ def reuse_identity(cursor_ds, people_id, upeople_id):
     try:
         cursor_ds.execute(query, (people_id, upeople_id))
     except _mysql_exceptions.IntegrityError:
-        print (people_id, " to ", upeople_id, " already exits").encode('utf-8')
+        print (str(people_id) + " to " + str(upeople_id) +
+               " already exits")
+
+
+def process_identity(cursor_ids, cursor_ds, people_id, field, field_type):
+    global reusedids, newids
+    results_ids = search_identity(cursor_ids, field)
+    if len(results_ids) > 0:
+        upeople_id = int(results_ids[0][0])
+        print ("Reusing identity by " + field_type + " "
+               + field).encode('utf-8')
+        reuse_identity(cursor_ds, people_id, upeople_id)
+        reusedids += 1
+    else:
+        upeople_id = insert_upeople(cursor_ids, cursor_ds, people_id,
+                                    field, field_type)
+        newids += 1
+    return upeople_id
 
 
 def main():
+    global reusedids, newids
+
     cfg = getOptions()
     data_source = cfg.data_source
-
     db_database_ds, cursor_ds = connect(cfg.db_name_ds, cfg)
     db_ids, cursor_ids = connect(cfg.db_name_ids, cfg)
 
@@ -207,7 +192,6 @@ def main():
         return
     results = execute_query(cursor_ds, query)
     total = len(results)
-    done = newids = reusedids = 0
     print ("Total identities to analyze: " + str(total))
 
     for result in results:
@@ -225,45 +209,28 @@ def main():
             name = result[1]
             email = result[2]
             user_id = result[3]
-        if name is None or name == 'None':
-            name = ''
-        if email is None or email == 'None':
-            email = ''
-        if user_id is None or user_id == 'None':
-            user_id = ''
 
-        results_ids = search_identity(cursor_ids, name)
-        if name != '' and len(results_ids) > 0:
-            upeople_id = int(results_ids[0][0])
-            print ("Reusing identity by name " + name).encode('utf-8')
-            reuse_identity(cursor_ds, people_id, upeople_id)
-            # Insert email identity also
-            if (email != ''):
-                insert_identity(cursor_ids, cursor_ds,
-                                upeople_id, None, email, None)
-            reusedids = reusedids + 1
-            continue
-        results_ids = search_identity(cursor_ids, email)
-        if email != '' and len(results_ids) > 0:
-            upeople_id = int(results_ids[0][0])
-            print ("Reusing identity by email " + email).encode('utf-8')
-            reuse_identity(cursor_ds, people_id, upeople_id)
-            # Insert name identity also
-            if (name != ''):
-                insert_identity(cursor_ids, cursor_ds,
-                                upeople_id, name, None, None)
-            reusedids = reusedids + 1
-            continue
-        results_ids = search_identity(cursor_ids, user_id)
-        if user_id != '' and len(results_ids) > 0:
-            upeople_id = int(results_ids[0][0])
-            print ("Reusing identity by user_id " + user_id).encode('utf-8')
-            reuse_identity(cursor_ds, people_id, upeople_id)
-            reusedids = reusedids + 1
-            continue
-        insert_upeople(cursor_ids, cursor_ds,
-                       people_id, name, email, user_id)
-        newids = newids + 1
+        upeople_id = None
+
+        if name != '' and name is not None and name != 'None':
+            if (upeople_id):
+                insert_identity(cursor_ids, upeople_id, name, "name")
+            else:
+                upeople_id = process_identity(cursor_ids, cursor_ds,
+                                              people_id, name, "name")
+        if email != '' and email is not None and email != 'None':
+            if (upeople_id):
+                insert_identity(cursor_ids, upeople_id, email, "email")
+            else:
+                upeople_id = process_identity(cursor_ids, cursor_ds,
+                                              people_id, email, "email")
+        if user_id != '' and user_id is not None and user_id != 'None':
+            if (upeople_id):
+                insert_identity(cursor_ids, upeople_id, user_id, "user_id")
+            else:
+                upeople_id = process_identity(cursor_ids, cursor_ds,
+                                              people_id, user_id, "user_id")
+
     db_ids.commit()
     db_database_ds.commit()
 
@@ -273,4 +240,6 @@ def main():
     return
 
 if __name__ == "__main__":
+    # Global vars
+    newids = reusedids = 0
     main()
