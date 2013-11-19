@@ -305,6 +305,8 @@ query = """SELECT *
            GROUP BY people.id"""
 
 query = "SELECT * FROM people"
+# Hack for wikimedia. https://www.bitergia.net/redmine/issues/2428
+query = "SELECT * FROM people WHERE email<>'ttijhof@wikimedia.org'"
 
 # Set all name retrieval in utf8
 cursor.execute("SET NAMES utf8")

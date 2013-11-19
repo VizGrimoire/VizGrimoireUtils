@@ -138,6 +138,7 @@ def insert_upeople_company(connector, upeople_id, company_id):
 
 
 def main(db):
+   sys.exit(0) # not used in mediawiki this script
    cfg = getOptions()   
    db, connector = connect(cfg)
    create_tables(db, connector)
