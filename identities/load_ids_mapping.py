@@ -80,7 +80,6 @@ def read_options():
     parser.add_option("-k", "--kind",
                       action="store",
                       dest="identity_type",
-                      default="email",
                       help="Identity kind: name, username, email")
     parser.add_option("-d", "--database",
                       action="store",
@@ -113,10 +112,15 @@ def read_options():
 
     if not(opts.map and opts.data_file and opts.dbname and opts.dbuser):
         parser.error("--map and --file and --database are needed")
+        sys.exit(1)
     if (opts.map != "countries" and opts.map != "companies"):
         print("Wrong map: " + opts.map + ". Only countries and companies supported.")
         sys.exit(1)
-
+    if (opts.identity_type != "email" and opts.identity_type != "username"
+        and opts.identity_type != "name"):
+        print("Wrong identity type: " + str(opts.identity_type) +
+              ". Only name, username and email supported.")
+        sys.exit(1)
     return opts
 
 
@@ -318,7 +322,6 @@ if __name__ == '__main__':
 
         q = "SELECT upeople_id, type, identity FROM identities "
         q += "WHERE identity = '%s'" % (identity)
-
         nmatches = cursor.execute(q)
 
         if nmatches == 0:
