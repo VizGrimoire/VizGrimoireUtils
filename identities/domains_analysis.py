@@ -24,7 +24,7 @@
 # domains_analysis.py
 #
 # This scripts is based on the outcomes of unifypeople.py.
-# This will provide two tables: companies and upeople_companies
+# This will provide two tables: domains and upeople_domains
 
 
 import MySQLdb
@@ -33,12 +33,12 @@ import re
 from optparse import OptionGroup, OptionParser
 
 def create_tables(db, connector):
-#   query = "DROP TABLE IF EXISTS companies"
+#   query = "DROP TABLE IF EXISTS domains"
 #   connector.execute(query)
-#   query = "DROP TABLE IF EXISTS upeople_companies"
+#   query = "DROP TABLE IF EXISTS upeople_domains"
 #   connector.execute(query)
 
-   query = "CREATE TABLE IF NOT EXISTS companies (" + \
+   query = "CREATE TABLE IF NOT EXISTS domains (" + \
            "id int(11) NOT NULL AUTO_INCREMENT," + \
            "name varchar(255) NOT NULL," + \
            "PRIMARY KEY (id)," + \
@@ -48,19 +48,19 @@ def create_tables(db, connector):
    connector.execute(query)
 
    try:
-       query = "CREATE INDEX companies_names ON companies (name)"
+       query = "CREATE INDEX domains_names ON domains (name)"
        connector.execute(query)
    except Exception:
-       print "Index companies.names  already created"
+       print "Index domains.name  already created"
 
-   query = "CREATE TABLE IF NOT EXISTS upeople_companies (" + \
+   query = "CREATE TABLE IF NOT EXISTS upeople_domains (" + \
            "id int(11) NOT NULL AUTO_INCREMENT," + \
            "upeople_id int(11) NOT NULL," + \
-           "company_id int(11) NOT NULL," + \
+           "domain_id int(11) NOT NULL," + \
            "init datetime," + \
            "end datetime," + \
            "PRIMARY KEY (id)," + \
-           "UNIQUE KEY (upeople_id, company_id, init)" + \
+           "UNIQUE KEY (upeople_id, domain_id, init)" + \
            ") ENGINE=MyISAM DEFAULT CHARSET=utf8"
    connector.execute(query)
 
@@ -92,7 +92,7 @@ def execute_query(connector, query):
   
 def getOptions():     
     parser = OptionParser(usage='Usage: %prog [options]', 
-                          description='Companies detection using email domains',
+                          description='Domains analysis detection using email addresses',
                           version='0.1')
     
     parser.add_option('-d', '--db-database', dest='db_database',
@@ -112,29 +112,29 @@ def getOptions():
     
     return ops
 
-def insert_company(connector, name):
-    q = "INSERT INTO companies (name) VALUES ('"+name+"')";
+def insert_domain(connector, name):
+    q = "INSERT INTO domains (name) VALUES ('"+name+"')";
     execute_query(connector, q)
 
-def get_company_id(connector, name):
-    company_id = None
-    q = "SELECT id FROM companies WHERE name ='"+name+"'"
+def get_domain_id(connector, name):
+    domain_id = None
+    q = "SELECT id FROM domains WHERE name ='"+name+"'"
     res = execute_query(connector, q)
     if len(res) == 0:
-        insert_company(connector,name)
-        company_id = get_company_id(connector, name)
-    else: company_id = res[0][0]
-    return company_id
+        insert_domain(connector,name)
+        domain_id = get_domain_id(connector, name)
+    else: domain_id = res[0][0]
+    return domain_id
 
-def insert_upeople_company(connector, upeople_id, company_id):
-    q = "INSERT INTO upeople_companies(upeople_id, company_id, init, end) " + \
+def insert_upeople_domain(connector, upeople_id, domain_id):
+    q = "INSERT INTO upeople_domains(upeople_id, domain_id, init, end) " + \
             "VALUES(" + str(upeople_id) + "," + \
-            str(company_id) + "," + \
+            str(domain_id) + "," + \
             "'1900-01-01', '2100-01-01' );"
     try:
         execute_query(connector, q)
     except:
-        print "Already inserted: " +str(upeople_id)+ " in company "+ str(company_id) + " in 1900-01-01"
+        print "Already inserted: " +str(upeople_id)+ " in domain "+ str(domain_id) + " in 1900-01-01"
 
 
 def main(db):
@@ -150,11 +150,11 @@ def main(db):
       upeople_id = int(person[0])
       email = str(person[1])
       if len(email) == 0:
-         company_id = get_company_id(connector, 'Unknown')
+         domain_id = get_domain_id(connector, 'Unknown')
       if re.match(rexp, email):
          m = re.match(rexp, email)
-         company = str(m.groups()[1].split('.')[0])
-         company_id = get_company_id(connector, company)
-      insert_upeople_company(connector, upeople_id, company_id)
+         domain = str(m.groups()[1].split('.')[0])
+         domain_id = get_domain_id(connector, domain)
+      insert_upeople_domain(connector, upeople_id, domain_id)
       
 if __name__ == "__main__":main(sys.argv[1])
