@@ -250,6 +250,8 @@ def create_tables_companies(cursor, con):
             "id int(11) NOT NULL AUTO_INCREMENT," + \
             "upeople_id int(11) NOT NULL," + \
             "company_id int(11) NOT NULL," + \
+            "init datetime NOT NULL default '1900-01-01'," + \
+            "end datetime NOT NULL default '2100-01-01'," + \
             "PRIMARY KEY (id)" + \
             ") ENGINE=MyISAM DEFAULT CHARSET=utf8"
     cursor.execute(query)
