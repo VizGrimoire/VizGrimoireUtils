@@ -74,7 +74,7 @@ def read_options():
                       help="File with data in format \"email:country|company\"")
     parser.add_option("-t", "--test",
                       action="store",
-                      dest="countries_test",
+                      dest="test",
                       default=False,
                       help="Generate automatic testing data")
     parser.add_option("-k", "--kind",
@@ -116,8 +116,8 @@ def read_options():
     if (opts.map != "countries" and opts.map != "companies"):
         print("Wrong map: " + opts.map + ". Only countries and companies supported.")
         sys.exit(1)
-    if (opts.identity_type != "email" and opts.identity_type != "username"
-        and opts.identity_type != "name"):
+    if (opts.test != "true" and (opts.identity_type != "email" and opts.identity_type != "username"
+        and opts.identity_type != "name")):
         print("Wrong identity type: " + str(opts.identity_type) +
               ". Only name, username and email supported.")
         sys.exit(1)
@@ -301,7 +301,7 @@ if __name__ == '__main__':
     cursor = con.cursor()
     create_tables(cursor, con, opts)
 
-    if opts.countries_test:  # helper code to test without real data
+    if opts.test:  # helper code to test without real data
         print("Creating test data ...")
         create_test_data(cursor, opts)
         sys.exit(0)      
