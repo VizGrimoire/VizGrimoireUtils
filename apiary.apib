@@ -1,0 +1,302 @@
+FORMAT: 1A
+HOST: http://demo.bitergia.com
+
+# vizGrimoire API
+API for accessing vizGrimoire variables and other data about a software
+development project, or a collection of those.
+
+Main abstractions of the API:
+
+* **Variable**: Abstract item, that will have a unique name, and will
+represent some property or measurement of the analyzed project,
+with some specific semantics. A variable can be an specific
+measurement (such as number of commits), but also other kinds of data
+(such as developer name) or a structured combination of specific
+measurements or other kinds of data (such as a time series of the
+number of commits per month, or a list of developers).
+* **Condition**. Qualifier that determine the context of a value for a
+variable. For example, the variable "number of commits" can be
+qualified with the conditions "scope: all the project", "period:
+from 2012-01-01 to 2012-12-31". Values are always of a variable
+qualified by a set of conditions.
+* **Value**. The specific value of a variable under speciic conditions.
+For example, the number of commits of the OpenStack project for all
+its life previous to 2014-01-08; the time series of the number of
+commits per month for the months of Jan, Feb and March 2013 for
+subproject XXX, or the list of the top ten developers with most
+commits.
+* **Set**. Set of variables that can be found together in the same
+JSON document. They are defined for convenience, to avoid having to
+specify in a single GET request a potentially large collection of
+variables. This would be much more convenient for the static API,
+for which in fact metrics are already grouped in JSON documents.
+
+# Group Variables
+Variables (and values for them) are provided as resources. In this
+hierarchy, each leaf resource corresponds to a variable offered by
+the API, and its value. Variables are structured in families, which
+act as collections of variables. Each family, such as /vars/scm,
+is a collection providing links to the available variables of that
+family. Each variable, such as /vars/scm/commits provides
+information about that variable, and the value of that variable.
+
+## Collection of families of variables [/vars]
+### List of all families of variables [GET]
+
+Root of the hierarchy, acts as a collection of families, providing
+links to all families of variables with available values.
+
++ Response 200 (application/json)
+
+        {"items": [
+            {"href": "/vars/scm"},
+            {"href": "/vars/its"},
+            {"href": "/vars/mls"}
+            ],
+         "desc": "List of families of variables"
+        }
+
+## Variables family [/vars/{fam}]
+Collection of variables in a family
++ Parameters
+    + fam (required, string, `scm`) ... Name of variables family.
+    Possible values are: scm, its, mls, wiki (others could  follow
+    in the future)
+    
+### List all variables in the family (or collections of variables) [GET]
++ Response 200 (application/json)
+
+        {"items": [
+            {"href": "/vars/scm/commits"},
+            {"href": "/vars/scm/authors"},
+            {"href": "/vars/scm/ts_commits"},
+            {"href": "/vars/scm/list_authors"}
+            ]
+         "desc": "List of variables for the source code management family"
+        }
+        
+## Variable [/var/{fam}/{variable}]
++ Parameters
+    + fam (required, string, `scm`) ... Name of variables family
+    + variable (required, string, `scm`) ... Name of variable
+
+### Values for a given variable [GET]
+General structure for all resources providing value and context
+data for a variable. List of actual resources for variables follow
+below.
+
++ Response 200 (application/json)
+
+        {"id": "scm/ts_commits",
+         "type": "ts of commits",
+         "desc": "Time serie of number of commits"
+         "value": {
+            "period": weeks,
+            "first_date": "2013-12-25",
+            "last_date": "2014-01-15",
+            "values": [23, 23, 56, 34],
+            "period_id": [`Dec 25 2013`, `Jan 1 2014`, `Jan 8 2014`, `Jan 15 2014`]
+            }
+        }
+        
+## Number of commits [/var/scm/ncommits]
+### Number of commits in SCM repo(s) [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/ncommits",
+        "type": "int",
+        "desc": "Number of commits in SCM repositories"
+        "value": { 2245 }
+        }
+
+## Timeserie of commits [/var/scm/ts_commits]
+### Timeserie of commits in SCM repo(s) [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/ts_commits",
+         "type": "ts of int",
+         "desc": "Time serie of number of commits in SCM repo(s)"
+         "value": {
+            "period": weeks,
+            "first_date": "2013-12-25",
+            "last_date": "2014-01-15",
+            "values": [23, 23, 56, 34],
+            "period_id": [`Dec 25 2013`, `Jan 1 2014`, `Jan 8 2014`, `Jan 15 2014`]
+            }
+        }
+        
+## Number of authors [/var/scm/nauthors]
+### Number of authors in SCM repo(s) [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/nauthors",
+         "type": "int",
+         "desc": "Number of authors in SCM repositories"
+         "value": { 207 }
+        }
+
+## Number of branches [/var/scm/nbranches]
+### Number of active branches in SCM repo(s) [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/nbranches",
+         "type": "int",
+         "desc": "Number of active branches in SCM repositories"
+         "value": { 15 }
+        }
+        
+## Number of files [/var/scm/nfiles]
+### Number of files changed by commits in SCM repo(s) [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/nfiles",
+         "type": "int",
+         "desc": "Number of files changed by commits in SCM repositories"
+         "value": { 87 }
+        }
+        
+## Number of authors [/var/scm/ncommitters]
+### Number of authors in SCM repo(s) [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/ncommitters",
+         "type": "int",
+         "desc": "Number of committers in SCM repositories"
+         "value": { 27 }
+        }
+        
+## Number of lines added [/var/scm/nlines_added]
+### Number of lines added in SCM repo(s) [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/nlines_added",
+         "type": "int",
+         "desc": "Number of lines added in SCM repositories"
+         "value": { 13446 }
+        }
+        
+## Number of lines removed [/var/scm/nlines_removed]
+### Number of lines removed in SCM repo(s) [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/nlines_removed",
+        "type": "int",
+        "desc": "Number of lines removed in SCM repositories"
+        "value": { 20355 }
+        }
+
+## Number of repositories [/var/scm/nrepos]
+### Number of active SCM repo(s) [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/nrepos",
+         "type": "int",
+         "desc": "Number of active SCM repo(s)"
+         "value": { 20355 }
+        }
+        
+# Group Sets
+Standard sets of variables provided by the  **vizGrimoire API**
+
+## Collection of sets [/sets]
+### List all avaialble sets of variables [GET]
++ Response 200 (application/json)
+
+        {"sets": [
+            {"id": "scm/basic",
+             "href": "/sets/scm/basic",
+             "templated": false,
+             "desc": "Basic variables from source code management repositories"
+             "vars": [
+                {"id": "scm/ncommits"},
+                {"id": "scm/nauthors"},
+                {"id": "scm/ncommitters"},
+                {"id": "scm/ts_commits"},
+                {"id": "scm/ts_authors"},
+                {"id": "scm/ts_committers"}
+                ]
+            },
+            {
+             "id": "{org/basic/{?org}}",
+             "href": "/sets/org/basic/{?org}",
+             "templated": true,
+             "parameters":
+                {"org":
+                    {"name": "Organization",
+                     "href": "/cond/scope/org"}}
+             "desc": "Basic variables for an organization (eg, a company)"
+             "vars": [
+                {"id": "scm/ncommits"},
+                {"id": "scm/nauthors"},
+                {"id": "scm/ncommitters"},
+                {"id": "scm/ts_commits"},
+                {"id": "scm/ts_authors"},
+                {"id": "scm/ts_committers"}
+                ],
+             "cond": "scope=org/{?org}"
+            }
+            ]
+        }
+
+## Set providing basic SCM variables [/sets/scm/basic]
+### Basic variables from SCM repositories [GET]
++ Response 200 (application/json)
+
+        {"id": "scm/basic",
+         "templated": false,
+         "desc": "Basic variables from source code management repositories"
+         "vars": [
+            {"common": true,
+             "type": int,
+             "vars": [
+                {"id": "scm/ncommits",
+                 "desc": "Number of commits in SCM repositories"
+                 "value": { 2245 }
+                },
+                {"id": "scm/nauthors",
+                 "desc": "Number of authors in SCM repositories"
+                 "value": { 207 }
+                },
+                {"id": "scm/ncommitters",
+                 "desc": "Number of committers in SCM repositories"
+                 "value": { 27 }
+                }]
+            },
+            {"common": true,
+             "type": "ts of int",
+             "value": {
+                "period": weeks,
+                "first_date": "2013-12-25",
+                "last_date": "2014-01-15",
+                "period_id": [`Dec 25 2013`, `Jan 1 2014`, `Jan 8 2014`, `Jan 15 2014`]
+                }
+             "vars": [
+                {"id": "scm/ts_commits",
+                 "desc": "Time serie of number of commits in SCM repo(s)"
+                 "value": {
+                    "values": [23, 23, 56, 34],
+                    }
+                },
+                {"id": "scm/ts_authors",
+                 "desc": "Time serie of number of authors in SCM repo(s)"
+                 "value": {
+                    "values": [12, 9, 11, 13]
+                    }
+                },
+                {"id": "scm/ts_committers"
+                 "desc": "Time serie of number of committers in SCM repo(s)"
+                 "value": {
+                    "values": [10, 7, 6, 10]
+                    }
+                }]
+            }]
+        }
