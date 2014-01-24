@@ -207,6 +207,19 @@ below.
 # Group Sets
 Standard sets of variables provided by the  **vizGrimoire API**
 
+Each set provides a set of variables, with the corresponding values. Sets
+are useful for asking for (and obtaining) several variables at once.
+
+Components of a set:
+    + "id": unique name, which is the resource name after "/sets/"
+    + "desc": description (text describing the set).
+    + "templated": boolean describing whether the set name is templated.
+        Being templated means that the resource name includes one of more
+        strings which is in fact a template to be substituted by its value
+        before invocation. Those templates are condition names, such as
+        "org" for organizations.
+    + "vars": list of variables, with values.
+
 ## Collection of sets [/sets]
 ### List all avaialble sets of variables [GET]
 + Response 200 (application/json)
@@ -246,23 +259,6 @@ Standard sets of variables provided by the  **vizGrimoire API**
             }
             ]
         }
-
-## Sets [/sets/{id}]
-Each set provides a set of variables, with the corresponding values. Sets
-are useful for asking for (and obtaining) several variables at once.
-
-Components of a set:
-    + "id": unique name, which is the resource name after "/sets/"
-    + "desc": description (text describing the set).
-    + "templated": boolean describing whether the set name is templated.
-        Being templated means that the resource name includes one of more
-        strings which is in fact a template to be substituted by its value
-        before invocation. Those templates are condition names, such as
-        "org" for organizations.
-    + "vars": list of variables, with values.
-
-+ Parameters
-    + id (required, string, `scm`) ... Name of set.
 
 ## Set providing basic SCM variables [/sets/scm/basic]
 ### Basic variables from SCM repositories [GET]
