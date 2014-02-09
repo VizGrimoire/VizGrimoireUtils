@@ -40,7 +40,7 @@ is a collection providing links to the available variables of that
 family. Each variable, such as /vars/scm/commits provides
 information about that variable, and the value of that variable.
 
-## Collection of families of variables [/vars]
+## Collection of families of variables [/var]
 ### List of all families of variables [GET]
 
 Root of the hierarchy, acts as a collection of families of variables,
@@ -51,15 +51,16 @@ providing links to all families of variables with available values.
     + Body
     
             {"items": [
-                {"href": "/vars/scm"},
-                {"href": "/vars/its"},
-                {"href": "/vars/mls"}
+                {"href": "/var/scm"},
+                {"href": "/var/its"},
+                {"href": "/var/mls"},
+                {"href": "/var/wiki"},
+                {"href": "/var/irc"}
                 ],
             "desc": "List of families of variables"
             }
 
-
-## Variables family [/vars/{fam}]
+## Variables family [/var/{fam}]
 Collection of variables in a family
 
 + Parameters
@@ -80,18 +81,52 @@ Collection of variables in a family
     + Body
 
             {"items": [
-                {"href": "/vars/scm/commits"},
-                {"href": "/vars/scm/authors"},
-                {"href": "/vars/scm/ts_commits"},
-                {"href": "/vars/scm/list_authors"}
+                {"href": "/var/scm/commits"},
+                {"href": "/var/scm/authors"},
+                {"href": "/var/scm/ts_commits"},
+                {"href": "/var/scm/list_authors"}
                 ]
             "desc": "List of variables for the source code management family"
             }
-        
+
+## SCM variables family [/var/scm]
+Collection of variables in the SCM family
+
+### List all variables in the SCM family [GET]
+
++ Response 200 (application/json)
+
+    + Body
+
+            {"items": [
+                {"href": "/var/scm/commits"},
+                {"href": "/var/scm/ncommits"},
+                {"href": "/var/scm/tscommits"},
+                {"href": "/var/scm/authors"},
+                {"href": "/var/scm/nauthors"},
+                {"href": "/var/scm/tsauthors"},
+                {"href": "/var/scm/committers"},
+                {"href": "/var/scm/ncommitters"},
+                {"href": "/var/scm/tscommitters"},
+                {"href": "/var/scm/branches"},
+                {"href": "/var/scm/nbranches"},
+                {"href": "/var/scm/tsbranches"},
+                {"href": "/var/scm/nlines_add"},
+                {"href": "/var/scm/tslines_add"},
+                {"href": "/var/scm/nlines_rm"},
+                {"href": "/var/scm/tslines_rm"},
+                {"href": "/var/scm/nfiles"},
+                {"href": "/var/scm/tsfiles"},
+                {"href": "/var/scm/nrepos"},
+                {"href": "/var/scm/tsrepos"}
+                ]
+            "desc": "List of variables for the source code management family"
+            }
+
 ## Variable [/var/{fam}/{variable}]
 + Parameters
     + fam (required, string, `scm`) ... Name of variables family
-    + variable (required, string, `scm`) ... Name of variable
+    + variable (required, string, `commits`) ... Name of variable
 
 ### Values for a given variable [GET]
 General structure for all resources providing value and context
@@ -111,9 +146,9 @@ below.
             "period_id": ["Dec 25 2013", "Jan 1 2014", "Jan 8 2014", "Jan 15 2014"]
             }
         }
-        
+
 ## Number of commits [/var/scm/ncommits]
-### Number of commits in SCM repo(s) [GET]
+### Number of commits in SCM repos [GET]
 
 + Response 200 (application/json)
 
@@ -123,8 +158,8 @@ below.
         "value": 2245
         }
 
-## Timeserie of commits [/var/scm/ts_commits]
-### Timeserie of commits in SCM repo(s) [GET]
+## Timeserie of commits [/var/scm/tscommits]
+### Timeserie of commits in SCM repos [GET]
 
 + Response 200 (application/json)
 
@@ -140,8 +175,37 @@ below.
             }
         }
 
+## List of commits [/var/scm/commits]
+### List of commits in SCM repos [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/commits",
+         "type": "list of commit",
+         "desc": "List of commits in SCM repositories",
+         "value": ["/var/scm/commit/43", "/var/scm/commit/47"]
+        }
+
+## Commit record [/var/scm/commits/{id}]
++ Parameters
+    + id (required, `num`, 45) ... Commit number
+
+### Information for a commit record in SCM repos [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/commits/45",
+         "scmid" = "fe23243edefdf4fedfeerrere",
+         "author" = 476,
+         "committer" = 45,
+         "date_author" = "2014-01-30T20:03:04",
+         "date_commit" = "2014-02-02T20:03:04",
+         "lines_add" = 345,
+         "lines_rem" = 254
+        }
+
 ## Number of authors [/var/scm/nauthors]
-### Number of authors in SCM repo(s) [GET]
+### Number of authors in SCM repos [GET]
 
 + Response 200 (application/json)
 
@@ -152,7 +216,7 @@ below.
         }
 
 ## Number of branches [/var/scm/nbranches]
-### Number of active branches in SCM repo(s) [GET]
+### Number of active branches in SCM repos [GET]
 
 + Response 200 (application/json)
 
@@ -163,7 +227,7 @@ below.
         }
         
 ## Number of files [/var/scm/nfiles]
-### Number of files changed by commits in SCM repo(s) [GET]
+### Number of files changed by commits in SCM repos [GET]
 
 + Response 200 (application/json)
 
@@ -174,7 +238,7 @@ below.
         }
         
 ## Number of authors [/var/scm/ncommitters]
-### Number of authors in SCM repo(s) [GET]
+### Number of authors in SCM repos [GET]
 
 + Response 200 (application/json)
 
@@ -184,30 +248,30 @@ below.
          "value": { 27 }
         }
         
-## Number of lines added [/var/scm/nlines_added]
-### Number of lines added in SCM repo(s) [GET]
+## Number of lines added [/var/scm/nlines_add]
+### Number of lines added in SCM repos [GET]
 
 + Response 200 (application/json)
 
-        {"id": "scm/nlines_added",
+        {"id": "scm/nlines_add",
          "type": "int",
          "desc": "Number of lines added in SCM repositories"
          "value": { 13446 }
         }
         
-## Number of lines removed [/var/scm/nlines_removed]
-### Number of lines removed in SCM repo(s) [GET]
+## Number of lines removed [/var/scm/nlines_rm]
+### Number of lines removed in SCM repos [GET]
 
 + Response 200 (application/json)
 
-        {"id": "scm/nlines_removed",
+        {"id": "scm/nlines_rm",
         "type": "int",
         "desc": "Number of lines removed in SCM repositories"
         "value": { 20355 }
         }
 
 ## Number of repositories [/var/scm/nrepos]
-### Number of active SCM repo(s) [GET]
+### Number of active SCM repos [GET]
 
 + Response 200 (application/json)
 
