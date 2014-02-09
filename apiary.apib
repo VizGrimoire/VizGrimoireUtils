@@ -43,37 +43,50 @@ information about that variable, and the value of that variable.
 ## Collection of families of variables [/vars]
 ### List of all families of variables [GET]
 
-Root of the hierarchy, acts as a collection of families, providing
-links to all families of variables with available values.
+Root of the hierarchy, acts as a collection of families of variables,
+providing links to all families of variables with available values.
 
 + Response 200 (application/json)
 
-        {"items": [
-            {"href": "/vars/scm"},
-            {"href": "/vars/its"},
-            {"href": "/vars/mls"}
-            ],
-         "desc": "List of families of variables"
-        }
+    + Body
+    
+            {"items": [
+                {"href": "/vars/scm"},
+                {"href": "/vars/its"},
+                {"href": "/vars/mls"}
+                ],
+            "desc": "List of families of variables"
+            }
+
 
 ## Variables family [/vars/{fam}]
 Collection of variables in a family
+
 + Parameters
+
     + fam (required, string, `scm`) ... Name of variables family.
-    Possible values are: scm, its, mls, wiki (others could  follow
-    in the future)
-    
-### List all variables in the family (or collections of variables) [GET]
+
+        + Values
+            + `scm`
+            + `its`
+            + `mls`
+            + `wiki`
+            + `irc`
+
+### List all variables in the family [GET]
+
 + Response 200 (application/json)
 
-        {"items": [
-            {"href": "/vars/scm/commits"},
-            {"href": "/vars/scm/authors"},
-            {"href": "/vars/scm/ts_commits"},
-            {"href": "/vars/scm/list_authors"}
-            ]
-         "desc": "List of variables for the source code management family"
-        }
+    + Body
+
+            {"items": [
+                {"href": "/vars/scm/commits"},
+                {"href": "/vars/scm/authors"},
+                {"href": "/vars/scm/ts_commits"},
+                {"href": "/vars/scm/list_authors"}
+                ]
+            "desc": "List of variables for the source code management family"
+            }
         
 ## Variable [/var/{fam}/{variable}]
 + Parameters
