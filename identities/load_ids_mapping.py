@@ -27,16 +27,16 @@
 from optparse import OptionParser
 import MySQLdb, sys, random
 
-def read_file(file):
-    fd = open(file,"r")
+def read_file(filename):
+    fd = open(filename, "r")
     lines = fd.readlines()
     fd.close()
     return lines
 
 
-def parse_file(file):
+def parse_file(filename):
     idmail = []
-    lines = read_file(file)
+    lines = read_file(filename)
     for l in lines:
         idmail.append(l.split(":"))
     return idmail
@@ -55,8 +55,8 @@ def open_database(myuser, mypassword, mydb):
                           user=myuser,
                           passwd=mypassword,
                           db=mydb)
-    #cursor = con.cursor()
-    #return cursor
+    # cursor = con.cursor()
+    # return cursor
     return con
 
 
@@ -74,9 +74,13 @@ def read_options():
                       help="File with data in format \"email:country|company\"")
     parser.add_option("-t", "--test",
                       action="store",
-                      dest="countries_test",
+                      dest="test",
                       default=False,
-                      help="Generate automatic testing data")                      
+                      help="Generate automatic testing data")
+    parser.add_option("-k", "--kind",
+                      action="store",
+                      dest="identity_type",
+                      help="Identity kind: name, username, email")
     parser.add_option("-d", "--database",
                       action="store",
                       dest="dbname",
@@ -102,36 +106,41 @@ def read_options():
                       help="countries or companies map")
 
     (opts, args) = parser.parse_args()
-    #print(opts)
+    # print(opts)
     if len(args) != 0:
         parser.error("Wrong number of arguments")
 
     if not(opts.map and opts.data_file and opts.dbname and opts.dbuser):
         parser.error("--map and --file and --database are needed")
-    if (opts.map != "countries" and opts.map != "companies"):
-        print("Wrong map: " + opts.map+". Only countries and companies supported.")
         sys.exit(1)
-
+    if (opts.map != "countries" and opts.map != "companies"):
+        print("Wrong map: " + opts.map + ". Only countries and companies supported.")
+        sys.exit(1)
+    if (opts.test != "true" and (opts.identity_type != "email" and opts.identity_type != "username"
+        and opts.identity_type != "name")):
+        print("Wrong identity type: " + str(opts.identity_type) +
+              ". Only name, username and email supported.")
+        sys.exit(1)
     return opts
 
 
-def insert_identity(cursor, debug, tuple):
+def insert_identity(cursor, debug, data):
     if debug:
         print("INSERT INTO identities (upeople_id, identity, type)\
-        VALUES (%s, '%s', '%s')" % tuple)
+        VALUES (%s, '%s', '%s')" % data)
     cursor.execute("INSERT INTO identities (upeople_id, identity, type)\
-    VALUES (%s, '%s', '%s')" % tuple)
+    VALUES (%s, '%s', '%s')" % data)
 
 
-def insert_upeople(cursor, debug, email):
+def insert_upeople(cursor, debug, identity):
     cursor.execute("SELECT MAX(id) FROM upeople")
     maxid = cursor.fetchone()[0]
     myid = int(maxid) + 1
     if debug:
         print("INSERT INTO upeople (id, identifier) VALUES (%s, '%s')"
-              % (myid, nickname))
+              % (myid, identity))
     cursor.execute("INSERT INTO upeople (id, identifier) VALUES (%s, '%s')"
-                   % (myid, email))
+                   % (myid, identity))
     return myid
 
 def insert_upeople_country(cursor, upeople_id, country, debug):    
@@ -169,7 +178,7 @@ def get_company_id(cursor, company, debug):
         print ("New company added " + company)
     else:
         company_id = cursor.fetchall()[0][0]
-        
+
     return company_id
 
 def update_upeople_company(cursor, upeople_id, company, debug):
@@ -196,32 +205,32 @@ def create_tables_countries(cursor, con):
 #   query = "DROP TABLE IF EXISTS upeople_countries"
 #   cursor.execute(query)
 
-   query = "CREATE TABLE IF NOT EXISTS countries (" + \
-           "id int(11) NOT NULL AUTO_INCREMENT," + \
-           "name varchar(255) NOT NULL," + \
-           "PRIMARY KEY (id)" + \
-           ") ENGINE=MyISAM DEFAULT CHARSET=utf8"
+    query = "CREATE TABLE IF NOT EXISTS countries (" + \
+            "id int(11) NOT NULL AUTO_INCREMENT," + \
+            "name varchar(255) NOT NULL," + \
+            "PRIMARY KEY (id)" + \
+            ") ENGINE=MyISAM DEFAULT CHARSET=utf8"
 
-   cursor.execute(query)
+    cursor.execute(query)
 
-   query = "CREATE TABLE IF NOT EXISTS upeople_countries (" + \
-           "id int(11) NOT NULL AUTO_INCREMENT," + \
-           "upeople_id int(11) NOT NULL," + \
-           "country_id int(11) NOT NULL," + \
-           "PRIMARY KEY (id)" + \
-           ") ENGINE=MyISAM DEFAULT CHARSET=utf8"
-   cursor.execute(query)
+    query = "CREATE TABLE IF NOT EXISTS upeople_countries (" + \
+            "id int(11) NOT NULL AUTO_INCREMENT," + \
+            "upeople_id int(11) NOT NULL," + \
+            "country_id int(11) NOT NULL," + \
+            "PRIMARY KEY (id)" + \
+            ") ENGINE=MyISAM DEFAULT CHARSET=utf8"
+    cursor.execute(query)
 
-   try:
-       query = "CREATE INDEX upc_up ON upeople_countries (upeople_id);"
-       cursor.execute(query)
-       query = "CREATE INDEX upc_c ON upeople_countries (country_id);"
-       cursor.execute(query)
-   except Exception:
-       print "Indexes upc_up and upc_c already created"
+    try:
+        query = "CREATE INDEX upc_up ON upeople_countries (upeople_id);"
+        cursor.execute(query)
+        query = "CREATE INDEX upc_c ON upeople_countries (country_id);"
+        cursor.execute(query)
+    except Exception:
+        print "Indexes upc_up and upc_c already created"
 
-   con.commit()
-   return
+    con.commit()
+    return
 
 def create_tables_companies(cursor, con):
 #   query = "DROP TABLE IF EXISTS companies"
@@ -229,32 +238,34 @@ def create_tables_companies(cursor, con):
 #   query = "DROP TABLE IF EXISTS upeople_companies"
 #   cursor.execute(query)
 
-   query = "CREATE TABLE IF NOT EXISTS companies (" + \
-           "id int(11) NOT NULL AUTO_INCREMENT," + \
-           "name varchar(255) NOT NULL," + \
-           "PRIMARY KEY (id)" + \
-           ") ENGINE=MyISAM DEFAULT CHARSET=utf8"
+    query = "CREATE TABLE IF NOT EXISTS companies (" + \
+            "id int(11) NOT NULL AUTO_INCREMENT," + \
+            "name varchar(255) NOT NULL," + \
+            "PRIMARY KEY (id)" + \
+            ") ENGINE=MyISAM DEFAULT CHARSET=utf8"
 
-   cursor.execute(query)
+    cursor.execute(query)
 
-   query = "CREATE TABLE IF NOT EXISTS upeople_companies (" + \
-           "id int(11) NOT NULL AUTO_INCREMENT," + \
-           "upeople_id int(11) NOT NULL," + \
-           "company_id int(11) NOT NULL," + \
-           "PRIMARY KEY (id)" + \
-           ") ENGINE=MyISAM DEFAULT CHARSET=utf8"
-   cursor.execute(query)
+    query = "CREATE TABLE IF NOT EXISTS upeople_companies (" + \
+            "id int(11) NOT NULL AUTO_INCREMENT," + \
+            "upeople_id int(11) NOT NULL," + \
+            "company_id int(11) NOT NULL," + \
+            "init datetime NOT NULL default '1900-01-01'," + \
+            "end datetime NOT NULL default '2100-01-01'," + \
+            "PRIMARY KEY (id)" + \
+            ") ENGINE=MyISAM DEFAULT CHARSET=utf8"
+    cursor.execute(query)
 
-   try:
-       query = "CREATE INDEX upcom_up ON upeople_companies (upeople_id);"
-       cursor.execute(query)
-       query = "CREATE INDEX upcom_c ON upeople_companies (company_id);"
-       cursor.execute(query)
-   except Exception:
-       print "Indexes upc_up and upcom_c already created"
+    try:
+        query = "CREATE INDEX upcom_up ON upeople_companies (upeople_id);"
+        cursor.execute(query)
+        query = "CREATE INDEX upcom_c ON upeople_companies (company_id);"
+        cursor.execute(query)
+    except Exception:
+        print "Indexes upc_up and upcom_c already created"
 
-   con.commit()
-   return
+    con.commit()
+    return
 
 def create_test_data(cursor, opts):
     if (opts.map == "countries"): return create_test_data_countries(cursor, opts)
@@ -268,9 +279,9 @@ def create_test_data_countries(cursor, opts):
     cursor.execute("SELECT id FROM upeople")
     identities = cursor.fetchall()
 
-    for id in identities:
-        country = test_countries[random.randint(0,len(test_countries)-1)]
-        insert_upeople_country(cursor, id[0], country, opts.debug)
+    for identity in identities:
+        country = test_countries[random.randint(0, len(test_countries) - 1)]
+        insert_upeople_country(cursor, identity[0], country, opts.debug)
 
 def create_test_data_companies(cursor, opts):
     test_companies = ['company1', 'company2', 'company3', 'company4', 'company5']
@@ -279,20 +290,20 @@ def create_test_data_companies(cursor, opts):
     cursor.execute("SELECT id FROM upeople")
     identities = cursor.fetchall()
 
-    for id in identities:
-        company = test_companies[random.randint(0,len(test_companies)-1)]
-        insert_upeople_company(cursor, id[0], company, opts.debug)
+    for identity in identities:
+        company = test_companies[random.randint(0, len(test_companies) - 1)]
+        insert_upeople_company(cursor, identity[0], company, opts.debug)
 
 
 if __name__ == '__main__':
     opts = None
     opts = read_options()
     con = open_database(opts.dbuser, opts.dbpassword, opts.dbname)
-    
+
     cursor = con.cursor()
     create_tables(cursor, con, opts)
 
-    if opts.countries_test: # helper code to test without real data
+    if opts.test:  # helper code to test without real data
         print("Creating test data ...")
         create_test_data(cursor, opts)
         sys.exit(0)      
@@ -304,24 +315,23 @@ if __name__ == '__main__':
     count_changed = 0
     count_cached = 0
     for i in ids_file:
-
-        email = i[0]
-        email = email.replace("'", "\\'") #avoiding ' errors in MySQL
+        identity = i[0]
+        identity = identity.replace("'", "\\'")  # avoiding ' errors in MySQL
         if (opts.map == "countries"):
             country = escape_string(i[1].rstrip('\n'))
         elif (opts.map == "companies"):
             company = escape_string(i[1].rstrip('\n'))
-        
+
         q = "SELECT upeople_id, type, identity FROM identities "
-        q += "WHERE identity = '%s'" % (email)
+        q += "WHERE identity = '%s'" % (identity)
         nmatches = cursor.execute(q)
-        
+
         if nmatches == 0:
             if opts.debug:
                 print("++ %s to be inserted. New upeople tuple to be created"
                       % (str(i)))
-            upeople_id = insert_upeople(cursor, opts.debug, email)
-            insert_identity(cursor, opts.debug, (upeople_id, email, "email"))
+            upeople_id = insert_upeople(cursor, opts.debug, identity)
+            insert_identity(cursor, opts.debug, (upeople_id, identity, opts.identity_type))
             if (opts.map == "countries"):
                 insert_upeople_country(cursor, upeople_id, country, opts.debug)
             elif (opts.map == "companies"):
@@ -332,29 +342,28 @@ if __name__ == '__main__':
             # if there are duplicated upeople_id we use the first we see
             identities = cursor.fetchall()
             upeople_id = identities[0][0]
-            
+
             if (opts.map == "countries"):
                 query = "SELECT upeople_id from upeople_countries \
-                         WHERE upeople_id = '%s'" % (upeople_id)                                  
+                         WHERE upeople_id = '%s'" % (upeople_id)
 
             if (opts.map == "companies"):
                 query = "SELECT upeople_id from upeople_companies \
                          WHERE upeople_id = '%s'" % (upeople_id)
 
             nmatches = cursor.execute(query)
-            
+
             if nmatches == 0:
                 if (opts.map == "countries"):
                     insert_upeople_country(cursor, upeople_id, country, opts.debug)
                 elif (opts.map == "companies"):
                     insert_upeople_company(cursor, upeople_id, company, opts.debug)
-                count_added +=1
+                count_added += 1
             else:
                 if (opts.map == "companies"):
                     update_upeople_company(cursor, upeople_id, company, opts.debug)
                     count_changed += 1
                 count_cached += 1
-
         con.commit()
 
     close_database(con)

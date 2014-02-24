@@ -332,6 +332,9 @@ for person in people:
     # Let's substitute them for something meaningful (the id)
     if name in ("???", "?", "", "root"):
         name = "**Unknown**" + "%3d" % id
+    # In SVN we don't have the email
+    if email is None:
+        email = ""
     personsById[id] = {'name': name, 'email': email}
     # Is name in names?
     uidName = identitiesNames.find (name)
