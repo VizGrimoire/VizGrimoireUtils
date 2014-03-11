@@ -47,6 +47,8 @@ def read_options():
     return opts
 
 def parseSCMRepos(repos):
+    global total_scm
+
     basic_scm_url = "http://git.eclipse.org/c"
 
     repos_list = ""
@@ -59,8 +61,10 @@ def parseSCMRepos(repos):
                     url = basic_scm_url + repo['path'].split('gitroot')[1]
                     logging.warn("URL is None. URL built: " + url)
                     repos_list += url+","
+                    total_scm += 1
         else:
             repos_list += repo['url']+","
+            total_scm += 1
     return repos_list.strip(",")
 
 def parseRepos(repos):
@@ -70,9 +74,12 @@ def parseRepos(repos):
     return repos_list.strip(",")
 
 def parseITSRepos(repos):
+    global total_its
+
     repos_list = ""
     for repo in repos:
         repos_list += repo['query_url']+","
+        total_its += 1
     return repos_list.strip(",")
 
 
@@ -119,10 +126,14 @@ if __name__ == '__main__':
     projects = json.loads(projects_raw)
     projects = projects['projects']
 
-    total_projects = 0;
+    total_projects = 0
+    total_scm = 0
+    total_its = 0
 
     for key in projects:
         total_projects += 1
         parseProject(projects[key])
 
     logging.info("Total projects: " + str(total_projects))
+    logging.info("Total scm: " + str(total_scm))
+    logging.info("Total its: " + str(total_its))
