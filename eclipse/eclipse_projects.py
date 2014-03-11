@@ -114,22 +114,25 @@ def showFields(project):
     for key in project:
         print(key)
 
+# We build the tree from leaves to roots
 def showProjectsTree(projects):
+    import pprint
+
     tree = {}
-    # First build the roots structure
+
+    # Add all roots with its leaves
     for key in projects:
+        if (key != "eclipse.platform"): pass
         data = projects[key]
         if (len(data['parent_project']) == 0):
-            tree[key] = []
-    # Populate roots
-    for key in projects:
-        data = projects[key]
-        # A project onyl has one parent
-        if (len(data['parent_project']) == 1):
+            if not key in tree: tree[key] = []
+        else:
             parent = data['parent_project'][0]['id']
-            if parent in tree:
-                tree[parent].append(data['id'][0]['value'])
-    print(tree)
+            if not parent in tree:
+                tree[parent] = []
+            tree[parent].append(key)
+
+    pprint.pprint(tree)
 
 def showProjects(projects):
     global total_its, total_scm, total_projects
