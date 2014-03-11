@@ -35,11 +35,16 @@ import urllib2
 def read_options():
     parser = OptionParser(usage="usage: %prog [options]",
                           version="%prog 0.1")
-    parser.add_option("--url",
+    parser.add_option("-u", "--url",
                       action="store",
                       dest="url",
                       default="http://projects.eclipse.org/json/projects/all",
                       help="URL with JSON data for projects")
+    parser.add_option("-t", "--tree",
+                      action="store_true",
+                      dest="tree",
+                      default=False,
+                      help="Show the projects Tree structure")
     (opts, args) = parser.parse_args()
     if len(args) != 0:
         parser.error("Wrong number of arguments")
@@ -109,6 +114,35 @@ def showFields(project):
     for key in project:
         print(key)
 
+def showProjectsTree(projects):
+    tree = {}
+    # First build the roots structure
+    for key in projects:
+        data = projects[key]
+        if (len(data['parent_project']) == 0):
+            tree[key] = []
+    # Populate roots
+    for key in projects:
+        data = projects[key]
+        # A project onyl has one parent
+        if (len(data['parent_project']) == 1):
+            parent = data['parent_project'][0]['id']
+            if parent in tree:
+                tree[parent].append(data['id'][0]['value'])
+    print(tree)
+
+def showProjects(projects):
+    global total_its, total_scm, total_projects
+
+    for key in projects:
+        total_projects += 1
+        parseProject(projects[key])
+
+    logging.info("Total projects: " + str(total_projects))
+    logging.info("Total scm: " + str(total_scm))
+    logging.info("Total its: " + str(total_its))
+
+
 if __name__ == '__main__':
     opts = read_options()
     metaproject = opts.url.replace("/","_")
@@ -127,14 +161,9 @@ if __name__ == '__main__':
     projects = json.loads(projects_raw)
     projects = projects['projects']
 
-    total_projects = 0
-    total_scm = 0
-    total_its = 0
+    total_projects = total_scm = total_its = 0
 
-    for key in projects:
-        total_projects += 1
-        parseProject(projects[key])
-
-    logging.info("Total projects: " + str(total_projects))
-    logging.info("Total scm: " + str(total_scm))
-    logging.info("Total its: " + str(total_its))
+    if opts.tree:
+        showProjectsTree(projects)
+    else:
+        showProjects(projects)
