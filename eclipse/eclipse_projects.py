@@ -45,32 +45,45 @@ def read_options():
                       dest="tree",
                       default=False,
                       help="Show the projects Tree structure")
+    parser.add_option("-s", "--scm",
+                      action="store_true",
+                      dest="scm",
+                      default=False,
+                      help="List with git repos")
     (opts, args) = parser.parse_args()
     if len(args) != 0:
         parser.error("Wrong number of arguments")
 
     return opts
 
-def parseSCMRepos(repos):
+def getSCMURL(repo):
+    basic_scm_url = "http://git.eclipse.org/c"
+    url = None
+    if repo['path'] is not None:
+        if not 'gitroot' in repo['path']:
+            logging.warn("URL is not git: " + repo['path'])
+        else:
+            url = basic_scm_url + repo['path'].split('gitroot')[1]
+            logging.warn("URL is None. URL built: " + url)
+            if (url == "http://git.eclipse.org/c"):
+                logging.warn("URL path empty. Discarding: " + url)
+                url = None
+    return url
+
+def getSCMRepos(repos):
     global total_scm
 
-    basic_scm_url = "http://git.eclipse.org/c"
-
-    repos_list = ""
+    repos_list = []
     for repo in repos:
         if repo['url'] is None:
-            if repo['path'] is not None:
-                if not 'gitroot' in repo['path']:
-                    logging.warn("URL is not git: " + repo['path'])
-                else:
-                    url = basic_scm_url + repo['path'].split('gitroot')[1]
-                    logging.warn("URL is None. URL built: " + url)
-                    repos_list += url+","
-                    total_scm += 1
-        else:
-            repos_list += repo['url']+","
+            url = getSCMURL(repo)
+            if url is None: continue
+            repos_list.append(url.replace("/c/","/gitroot/"))
             total_scm += 1
-    return repos_list.strip(",")
+        else:
+            repos_list.append(repo['url'].replace("/c/","/gitroot/"))
+            total_scm += 1
+    return repos_list
 
 def parseRepos(repos):
     repos_list = ""
@@ -93,7 +106,7 @@ def parseProject(data):
     print("ID: "+data['id'][0]['value']) # safe_value other field
     if (len(data['id'])>1):
         logging.info("More than one identifier")
-    print("SCM: " + parseSCMRepos(data['source_repo']))
+    print("SCM: " + ",".join(getSCMRepos(data['source_repo'])))
     print("ITS: " + parseITSRepos(data['bugzilla']))
     if not isinstance(data['dev_list'], list):
         if data['dev_list']['url'] is None:
@@ -145,6 +158,23 @@ def showProjects(projects):
     logging.info("Total scm: " + str(total_scm))
     logging.info("Total its: " + str(total_its))
 
+def showReposList(projects):
+    rlist = ""
+    for key in projects:
+        repos = getSCMRepos(projects[key]['source_repo'])
+        if (len(repos)>0):
+            rlist += "\n".join(repos)+"\n"
+    rlist = rlist[:-1]
+    for line in rlist.split("\n"):
+        target = ""
+        if "gitroot" in line:
+            target = line.split("/gitroot/")[1]
+        elif "svnroot" in line:
+            logging.warning("SVN not supported " + line)
+            continue
+        else:
+            logging.warning("SCM URL special " + line)
+        print("git clone " + line + " scm/" + target)
 
 if __name__ == '__main__':
     opts = read_options()
@@ -168,5 +198,7 @@ if __name__ == '__main__':
 
     if opts.tree:
         showProjectsTree(projects)
+    elif opts.scm:
+        showReposList(projects)
     else:
         showProjects(projects)
