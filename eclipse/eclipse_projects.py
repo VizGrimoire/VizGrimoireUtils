@@ -111,7 +111,8 @@ def showFields(project):
 
 if __name__ == '__main__':
     opts = read_options()
-    json_file = "./projects.json"
+    metaproject = opts.url.replace("/","_")
+    json_file = "./"+metaproject+".json"
 
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s')
     logging.info("Starting Eclipse projects analysis from: " +  opts.url)
