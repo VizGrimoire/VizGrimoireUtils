@@ -50,6 +50,11 @@ def read_options():
                       dest="scm",
                       default=False,
                       help="List with git repos")
+    parser.add_option("-i", "--its",
+                      action="store_true",
+                      dest="its",
+                      default=False,
+                      help="List with bugzilla (its) repos")
     (opts, args) = parser.parse_args()
     if len(args) != 0:
         parser.error("Wrong number of arguments")
@@ -86,20 +91,19 @@ def getSCMRepos(repos):
     return repos_list
 
 def parseRepos(repos):
-    repos_list = ""
+    repos_list = []
     for repo in repos:
-        repos_list += repo['url']+","
-    return repos_list.strip(",")
+        repos_list.append(repo['url'])
+    return repos_list
 
-def parseITSRepos(repos):
+def getITSRepos(repos):
     global total_its
 
-    repos_list = ""
+    repos_list = []
     for repo in repos:
-        repos_list += repo['query_url']+","
+        repos_list.append(repo['query_url'])
         total_its += 1
-    return repos_list.strip(",")
-
+    return repos_list
 
 def parseProject(data):
     print("Title: " + data['title'])
@@ -107,14 +111,14 @@ def parseProject(data):
     if (len(data['id'])>1):
         logging.info("More than one identifier")
     print("SCM: " + ",".join(getSCMRepos(data['source_repo'])))
-    print("ITS: " + parseITSRepos(data['bugzilla']))
+    print("ITS: " + ",".join(getITSRepos(data['bugzilla'])))
     if not isinstance(data['dev_list'], list):
         if data['dev_list']['url'] is None:
             logging.warn("URL is None for MLS")
         else:
             print("MLS: " + data['dev_list']['url'])
-    print("Forums: " + parseRepos(data['forums']))
-    print("Wiki: " + parseRepos(data['wiki_url']))
+    print("Forums: " + ",".join(parseRepos(data['forums'])))
+    print("Wiki: " + ",".join(parseRepos(data['wiki_url'])))
     if (len(data['parent_project'])>1):
         logging.info("More than one parent")
     if (len(data['parent_project'])>0):
@@ -158,6 +162,7 @@ def showProjects(projects):
     logging.info("Total scm: " + str(total_scm))
     logging.info("Total its: " + str(total_its))
 
+# TODO: remove duplicate repos
 def showReposList(projects):
     rlist = ""
     for key in projects:
@@ -175,6 +180,16 @@ def showReposList(projects):
         else:
             logging.warning("SCM URL special " + line)
         print("git clone " + line + " scm/" + target)
+
+# TODO: remove duplicate repos
+def showReposITSList(projects):
+    rlist = ""
+    for key in projects:
+        repos = getITSRepos(projects[key]['bugzilla'])
+        if (len(repos)>0):
+            rlist += ",".join(repos)+","
+    rlist = rlist[:-1]
+    print(rlist)
 
 if __name__ == '__main__':
     opts = read_options()
@@ -200,5 +215,7 @@ if __name__ == '__main__':
         showProjectsTree(projects)
     elif opts.scm:
         showReposList(projects)
+    elif opts.its:
+        showReposITSList(projects)
     else:
         showProjects(projects)
