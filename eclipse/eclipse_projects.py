@@ -30,7 +30,7 @@ import logging
 from optparse import OptionParser
 import os.path
 import sys
-import urllib2
+import urllib2, urllib
 
 def read_options():
     parser = OptionParser(usage="usage: %prog [options]",
@@ -101,7 +101,7 @@ def getITSRepos(repos):
 
     repos_list = []
     for repo in repos:
-        repos_list.append(repo['query_url'])
+        repos_list.append(urllib.unquote(repo['query_url']))
         total_its += 1
     return repos_list
 
@@ -187,8 +187,9 @@ def showReposITSList(projects):
     for key in projects:
         repos = getITSRepos(projects[key]['bugzilla'])
         if (len(repos)>0):
-            rlist += ",".join(repos)+","
-    rlist = rlist[:-1]
+            rlist += "','"+"',".join(repos)
+    rlist = rlist[2:]
+    rlist += "'"
     print(rlist)
 
 if __name__ == '__main__':
