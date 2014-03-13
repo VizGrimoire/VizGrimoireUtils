@@ -55,6 +55,11 @@ def read_options():
                       dest="its",
                       default=False,
                       help="List with bugzilla (its) repos")
+    parser.add_option("-m", "--mls",
+                      action="store_true",
+                      dest="mls",
+                      default=False,
+                      help="List with mailman repos")
     parser.add_option("-d", "--dups",
                       action="store_true",
                       dest="dups",
@@ -81,7 +86,8 @@ def getSCMURL(repo):
                 url = None
     return url
 
-def getSCMRepos(repos):
+def getSCMRepos(project):
+    repos = project['source_repo']
     repos_list = []
     for repo in repos:
         if repo['url'] is None:
@@ -98,10 +104,19 @@ def parseRepos(repos):
         repos_list.append(repo['url'])
     return repos_list
 
-def getITSRepos(repos):
+def getITSRepos(project):
+    repos = project['bugzilla']
     repos_list = []
     for repo in repos:
         repos_list.append(urllib.unquote(repo['query_url']))
+    return repos_list
+
+def getMLSRepos(project):
+    repos_list = []
+    info = project['dev_list']
+    if not isinstance(info, list): # if list, no data
+        if info['url'] is not None:
+            repos_list.append(info['url'])
     return repos_list
 
 def parseProject(data):
@@ -109,8 +124,8 @@ def parseProject(data):
     print("ID: "+data['id'][0]['value']) # safe_value other field
     if (len(data['id'])>1):
         logging.info("More than one identifier")
-    print("SCM: " + ",".join(getSCMRepos(data['source_repo'])))
-    print("ITS: " + ",".join(getITSRepos(data['bugzilla'])))
+    print("SCM: " + ",".join(getSCMRepos(data)))
+    print("ITS: " + ",".join(getITSRepos(data)))
     if not isinstance(data['dev_list'], list):
         if data['dev_list']['url'] is None:
             logging.warn("URL is None for MLS")
@@ -130,9 +145,11 @@ def getReposList(projects, kind):
     repos_all = []
     for project in projects:
         if kind == "its":
-            repos = getITSRepos(projects[project]['bugzilla'])
+            repos = getITSRepos(projects[project])
         elif kind == "scm":
-            repos = getSCMRepos(projects[project]['source_repo'])
+            repos = getSCMRepos(projects[project])
+        elif kind == "mls":
+            repos = getMLSRepos(projects[project])
         repos_all += repos
     return repos_all
 
@@ -142,9 +159,11 @@ def getReposDuplicateList(projects, kind):
 
     for project in projects:
         if kind == "its":
-            repos = getITSRepos(projects[project]['bugzilla'])
+            repos = getITSRepos(projects[project])
         if kind == "scm":
-            repos = getSCMRepos(projects[project]['source_repo'])
+            repos = getSCMRepos(projects[project])
+        if kind == "mls":
+            repos = getMLSRepos(projects[project])
         for repo in repos:
             if repo in repos_seen:
                 if not repo in repos_dup:
@@ -187,19 +206,22 @@ def showProjects(projects):
 
     scm_total = len(getReposList(projects, "scm"))
     its_total = len(getReposList(projects, "its"))
+    mls_total = len(getReposList(projects, "mls"))
     scm_dup = len(getReposDuplicateList(projects, "scm").keys())
     its_dup = len(getReposDuplicateList(projects, "its").keys())
+    mls_dup = len(getReposDuplicateList(projects, "mls").keys())
 
     logging.info("Total projects: " + str(total_projects))
     # Including all (svn, cvs, git ...)
     logging.info("Total scm: " + str(scm_total) + " (" + str(scm_dup)+ " duplicates)")
     logging.info("Total its: " + str(its_total) + " (" + str(its_dup)+ " duplicates)")
+    logging.info("Total mls: " + str(mls_total) + " (" + str(mls_dup)+ " duplicates)")
 
-def showReposList(projects):
+def showReposSCMList(projects):
     rlist = ""
     all_repos = []
     for key in projects:
-        repos = getSCMRepos(projects[key]['source_repo'])
+        repos = getSCMRepos(projects[key])
         all_repos += repos
     unique_repos = list(set(all_repos))
     rlist += "\n".join(unique_repos)+"\n"
@@ -219,7 +241,18 @@ def showReposITSList(projects):
     rlist = ""
     all_repos = []
     for key in projects:
-        repos = getITSRepos(projects[key]['bugzilla'])
+        repos = getITSRepos(projects[key])
+        all_repos += repos
+    unique_repos = list(set(all_repos))
+    rlist += "'"+"','".join(unique_repos)
+    rlist += "'"
+    print(rlist)
+
+def showReposMLSList(projects):
+    rlist = ""
+    all_repos = []
+    for key in projects:
+        repos = getMLSRepos(projects[key])
         all_repos += repos
     unique_repos = list(set(all_repos))
     rlist += "'"+"','".join(unique_repos)
@@ -230,6 +263,7 @@ def showDuplicatesList(projects):
     import pprint
     pprint.pprint(getReposDuplicateList(projects, "its"))
     pprint.pprint(getReposDuplicateList(projects, "scm"))
+    pprint.pprint(getReposDuplicateList(projects, "mls"))
 
 if __name__ == '__main__':
     opts = read_options()
@@ -252,9 +286,11 @@ if __name__ == '__main__':
     if opts.tree:
         showProjectsTree(projects)
     elif opts.scm:
-        showReposList(projects)
+        showReposSCMList(projects)
     elif opts.its:
         showReposITSList(projects)
+    elif opts.mls:
+        showReposMLSList(projects)
     elif opts.dups:
         showDuplicatesList(projects)
     else:
