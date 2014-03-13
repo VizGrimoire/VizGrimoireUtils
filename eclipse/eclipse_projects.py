@@ -72,28 +72,24 @@ def getSCMURL(repo):
     url = None
     if repo['path'] is not None:
         if not 'gitroot' in repo['path']:
-            logging.warn("URL is not git: " + repo['path'])
+            logging.warn("Discarding. Can't build URL no git: " + repo['path'])
         else:
             url = basic_scm_url + repo['path'].split('gitroot')[1]
             logging.warn("URL is None. URL built: " + url)
             if (url == "http://git.eclipse.org/c"):
-                logging.warn("URL path empty. Discarding: " + url)
+                logging.warn("Discarding. URL path empty: " + url)
                 url = None
     return url
 
 def getSCMRepos(repos):
-    global total_scm
-
     repos_list = []
     for repo in repos:
         if repo['url'] is None:
             url = getSCMURL(repo)
             if url is None: continue
             repos_list.append(url.replace("/c/","/gitroot/"))
-            total_scm += 1
         else:
             repos_list.append(repo['url'].replace("/c/","/gitroot/"))
-            total_scm += 1
     return repos_list
 
 def parseRepos(repos):
@@ -103,12 +99,9 @@ def parseRepos(repos):
     return repos_list
 
 def getITSRepos(repos):
-    global total_its
-
     repos_list = []
     for repo in repos:
         repos_list.append(urllib.unquote(repo['query_url']))
-        total_its += 1
     return repos_list
 
 def parseProject(data):
@@ -132,6 +125,34 @@ def parseProject(data):
     if (len(data['github_repos'])>0):
         print(data['github_repos'])
     print("---")
+
+def getReposList(projects, kind):
+    repos_all = []
+    for project in projects:
+        if kind == "its":
+            repos = getITSRepos(projects[project]['bugzilla'])
+        elif kind == "scm":
+            repos = getSCMRepos(projects[project]['source_repo'])
+        repos_all += repos
+    return repos_all
+
+def getReposDuplicateList(projects, kind):
+    repos_dup = {}
+    repos_seen = {}
+
+    for project in projects:
+        if kind == "its":
+            repos = getITSRepos(projects[project]['bugzilla'])
+        if kind == "scm":
+            repos = getSCMRepos(projects[project]['source_repo'])
+        for repo in repos:
+            if repo in repos_seen:
+                if not repo in repos_dup:
+                    repos_dup[repo] = []
+                    repos_dup[repo].append(repos_seen[repo])
+                repos_dup[repo].append(project)
+            else: repos_seen[repo] = project
+    return repos_dup
 
 def showFields(project):
     for key in project:
@@ -158,15 +179,21 @@ def showProjectsTree(projects):
     pprint.pprint(tree)
 
 def showProjects(projects):
-    global total_its, total_scm, total_projects
+    total_projects = 0
 
     for key in projects:
         total_projects += 1
         parseProject(projects[key])
 
+    scm_total = len(getReposList(projects, "scm"))
+    its_total = len(getReposList(projects, "its"))
+    scm_dup = len(getReposDuplicateList(projects, "scm").keys())
+    its_dup = len(getReposDuplicateList(projects, "its").keys())
+
     logging.info("Total projects: " + str(total_projects))
-    logging.info("Total scm: " + str(total_scm))
-    logging.info("Total its: " + str(total_its))
+    # Including all (svn, cvs, git ...)
+    logging.info("Total scm: " + str(scm_total) + " (" + str(scm_dup)+ " duplicates)")
+    logging.info("Total its: " + str(its_total) + " (" + str(its_dup)+ " duplicates)")
 
 def showReposList(projects):
     rlist = ""
@@ -199,29 +226,10 @@ def showReposITSList(projects):
     rlist += "'"
     print(rlist)
 
-def getDuplicatesList(projects, kind):
-    repos_dup = {}
-    repos_seen = {}
-
-    for project in projects:
-        if kind == "its":
-            repos = getITSRepos(projects[project]['bugzilla'])
-        if kind == "scm":
-            repos = getSCMRepos(projects[project]['source_repo'])
-        for repo in repos:
-            if repo in repos_seen:
-                if not repo in repos_dup:
-                    repos_dup[repo] = []
-                    repos_dup[repo].append(repos_seen[repo])
-                repos_dup[repo].append(project)
-            else: repos_seen[repo] = project
-    return repos_dup
-
-
 def showDuplicatesList(projects):
     import pprint
-    pprint.pprint(getDuplicatesList(projects, "its"))
-    pprint.pprint(getDuplicatesList(projects, "scm"))
+    pprint.pprint(getReposDuplicateList(projects, "its"))
+    pprint.pprint(getReposDuplicateList(projects, "scm"))
 
 if __name__ == '__main__':
     opts = read_options()
@@ -240,8 +248,6 @@ if __name__ == '__main__':
     projects_raw = open(json_file, 'r').read()
     projects = json.loads(projects_raw)
     projects = projects['projects']
-
-    total_projects = total_scm = total_its = 0
 
     if opts.tree:
         showProjectsTree(projects)
