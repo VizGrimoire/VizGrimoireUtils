@@ -55,6 +55,12 @@ def read_options():
                       dest="its",
                       default=False,
                       help="List with bugzilla (its) repos")
+    parser.add_option("-d", "--dups",
+                      action="store_true",
+                      dest="dups",
+                      default=False,
+                      help="Report about repos duplicated in projects")
+
     (opts, args) = parser.parse_args()
     if len(args) != 0:
         parser.error("Wrong number of arguments")
@@ -162,13 +168,14 @@ def showProjects(projects):
     logging.info("Total scm: " + str(total_scm))
     logging.info("Total its: " + str(total_its))
 
-# TODO: remove duplicate repos
 def showReposList(projects):
     rlist = ""
+    all_repos = []
     for key in projects:
         repos = getSCMRepos(projects[key]['source_repo'])
-        if (len(repos)>0):
-            rlist += "\n".join(repos)+"\n"
+        all_repos += repos
+    unique_repos = list(set(all_repos))
+    rlist += "\n".join(unique_repos)+"\n"
     rlist = rlist[:-1]
     for line in rlist.split("\n"):
         target = ""
@@ -181,16 +188,40 @@ def showReposList(projects):
             logging.warning("SCM URL special " + line)
         print("git clone " + line + " scm/" + target)
 
-# TODO: remove duplicate repos
 def showReposITSList(projects):
     rlist = ""
+    all_repos = []
     for key in projects:
         repos = getITSRepos(projects[key]['bugzilla'])
-        if (len(repos)>0):
-            rlist += "','"+"',".join(repos)
-    rlist = rlist[2:]
+        all_repos += repos
+    unique_repos = list(set(all_repos))
+    rlist += "'"+"','".join(unique_repos)
     rlist += "'"
     print(rlist)
+
+def getDuplicatesList(projects, kind):
+    repos_dup = {}
+    repos_seen = {}
+
+    for project in projects:
+        if kind == "its":
+            repos = getITSRepos(projects[project]['bugzilla'])
+        if kind == "scm":
+            repos = getSCMRepos(projects[project]['source_repo'])
+        for repo in repos:
+            if repo in repos_seen:
+                if not repo in repos_dup:
+                    repos_dup[repo] = []
+                    repos_dup[repo].append(repos_seen[repo])
+                repos_dup[repo].append(project)
+            else: repos_seen[repo] = project
+    return repos_dup
+
+
+def showDuplicatesList(projects):
+    import pprint
+    pprint.pprint(getDuplicatesList(projects, "its"))
+    pprint.pprint(getDuplicatesList(projects, "scm"))
 
 if __name__ == '__main__':
     opts = read_options()
@@ -218,5 +249,7 @@ if __name__ == '__main__':
         showReposList(projects)
     elif opts.its:
         showReposITSList(projects)
+    elif opts.dups:
+        showDuplicatesList(projects)
     else:
         showProjects(projects)
