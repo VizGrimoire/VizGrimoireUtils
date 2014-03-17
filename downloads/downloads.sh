@@ -18,26 +18,26 @@
 #       Daniel Izquierdo Cortazar <dizquierdo@bitergia.com>
 
 
-
-# $1: URL user
-# $2: URL password
-# $3: URL
-# $4: database user
-# $5: database
+# $1: output dir
+# $2: URL user
+# $3: URL password
+# $4: URL
+# $5: database user
+# $6: database
 
 
 # Download of logs
-wget -N -H -r --level=1 -k -np -nd --user=$1 --password=$2 $3
+wget -N -H -r --level=1 -k -np -P $1 -nd --user=$2 --password=$3 $4
 
 # List of files to be parsed
 files=`ls *Weekly*.csv`
 
 # Dropping previous versions
-mysql -u $4 -D $5 -e "delete from downloads"
+mysql -u $5 -D $6 -e "delete from downloads"
 
 # Inserting all csv files into database
 for file in $files
 do
- mysql -u $4 -D $5 --local-infile  -e "load data local infile '`echo $file`' into table downloads fields terminated by ',' enclosed by '\\\"' lines terminated by '\n' (date, ip, package, protocol)"
+ mysql -u $5 -D $6 --local-infile  -e "load data local infile '`echo $file`' into table downloads fields terminated by ',' enclosed by '\\\"' lines terminated by '\n' (date, ip, package, protocol)"
 done
 
