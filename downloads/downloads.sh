@@ -30,7 +30,7 @@
 wget -N -H -r --level=1 -k -np -P $1 -nd --user=$2 --password=$3 $4
 
 # List of files to be parsed
-files=`ls *Weekly*.csv`
+files=`ls $1/*Weekly*.csv`
 
 # Dropping previous versions
 mysql -u $5 -D $6 -e "delete from downloads"
