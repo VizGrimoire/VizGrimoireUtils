@@ -4,7 +4,7 @@
 # This script parses IRC logs and stores the extracted data in
 # a database
 # 
-# Copyright (C) 2012-2013 Bitergia
+# Copyright (C) 2014 Bitergia
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -60,6 +60,11 @@ def read_options():
                       dest="mls",
                       default=False,
                       help="List with mailman repos")
+    parser.add_option("-r", "--scr",
+                      action="store_true",
+                      dest="scr",
+                      default=False,
+                      help="List with gerrit repos")
     parser.add_option("-d", "--dups",
                       action="store_true",
                       dest="dups",
@@ -259,6 +264,22 @@ def showReposMLSList(projects):
     rlist += "'"
     print(rlist)
 
+def showReposSCRList(projects):
+    all_repos = []
+    for key in projects:
+        repos = getSCMRepos(projects[key])
+        all_repos += repos
+    unique_repos = list(set(all_repos))
+    projects = ""
+
+    for repo in unique_repos:
+        if "gitroot" in repo:
+            gerrit_project = repo.replace("http://git.eclipse.org/gitroot/","")
+            gerrit_project = gerrit_project.replace(".git","")
+            projects += "\""+(gerrit_project)+"\""+","
+    projects = projects[:-1]
+    print(projects)
+
 def showDuplicatesList(projects):
     import pprint
     pprint.pprint(getReposDuplicateList(projects, "its"))
@@ -291,6 +312,8 @@ if __name__ == '__main__':
         showReposITSList(projects)
     elif opts.mls:
         showReposMLSList(projects)
+    elif opts.scr:
+        showReposSCRList(projects)
     elif opts.dups:
         showDuplicatesList(projects)
     else:
