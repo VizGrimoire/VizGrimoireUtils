@@ -25,6 +25,9 @@
 #
 
 
+from ConfigParser import SafeConfigParser
+import MySQLdb
+
 import json
 import logging
 from optparse import OptionParser
@@ -70,10 +73,23 @@ def read_options():
                       dest="dups",
                       default=False,
                       help="Report about repos duplicated in projects")
+    parser.add_option("-p", "--projects",
+                      action="store_true",
+                      dest="projects",
+                      default=False,
+                      help="Generate the databases for projects to repositories\
+                            and to children mapping")
+    parser.add_option("-a", "--automator",
+                      action="store",
+                      dest="automator_file",
+                      help="Automator config file")
 
     (opts, args) = parser.parse_args()
     if len(args) != 0:
         parser.error("Wrong number of arguments")
+
+    if (opts.projects and not opts.automator_file):
+        parser.error("projects option needs automator config file")
 
     return opts
 
@@ -286,6 +302,66 @@ def showDuplicatesList(projects):
     pprint.pprint(getReposDuplicateList(projects, "scm"))
     pprint.pprint(getReposDuplicateList(projects, "mls"))
 
+def create_projects_schema(cursor):
+    logging.info("Creating tables for project support")
+
+    project_table = """
+        CREATE TABLE projects (
+            project_id int(11) NOT NULL AUTO_INCREMENT,
+            name varchar(255) NOT NULL,
+            PRIMARY KEY (project_id)
+        ) ENGINE=MyISAM DEFAULT CHARSET=utf8
+    """
+    project_repositories_table = """
+        CREATE TABLE project_repositories (
+            project_id int(11) NOT NULL,
+            data_source varchar(255) NOT NULL,
+            name varchar(255) NOT NULL,
+            repository_id int(11) NOT NULL,
+            UNIQUE (project_id, data_source, repository_id)
+        ) ENGINE=MyISAM DEFAULT CHARSET=utf8
+    """
+    project_children_table = """
+        CREATE TABLE project_children (
+            project_id int(11) NOT NULL,
+            subproject_id int(11) NOT NULL,
+            UNIQUE (project_id, subproject_id)
+        ) ENGINE=MyISAM DEFAULT CHARSET=utf8
+    """
+
+    # The data in tables is created automatically.
+    # No worries about dropping tables.
+    cursor.execute("DROP TABLE IF EXISTS projects")
+    cursor.execute("DROP TABLE IF EXISTS project_repositories")
+    cursor.execute("DROP TABLE IF EXISTS project_children")
+
+    cursor.execute(project_table)
+    cursor.execute(project_repositories_table)
+    cursor.execute(project_children_table)
+
+def showProjectReposProjectsMap(projects, automator_file):
+    """Create tables for projects, project_repos and project_children"""
+
+    # Read db config
+    parser = SafeConfigParser()
+    fd = open(automator_file, 'r')
+    parser.readfp(fd)
+    fd.close()
+
+    user = parser.get('generic','db_user')
+    passwd = parser.get('generic','db_password')
+    db = parser.get('generic','db_identities')
+
+    db = MySQLdb.connect(user = user, passwd = passwd, db = db)
+    cursor = db.cursor()
+    create_projects_schema(cursor)
+
+    # First step, load all projects in the table
+    for key in projects:
+        logging.info("Project name %s" % projects[key]['title'])
+        q = "INSERT INTO projects (name) values (%s)"
+        cursor.execute(q, projects[key]['title'])
+
 if __name__ == '__main__':
     opts = read_options()
     metaproject = opts.url.replace("/","_")
@@ -316,5 +392,7 @@ if __name__ == '__main__':
         showReposSCRList(projects)
     elif opts.dups:
         showDuplicatesList(projects)
+    elif opts.projects:
+        showProjectReposProjectsMap(projects, opts.automator_file)
     else:
         showProjects(projects)
