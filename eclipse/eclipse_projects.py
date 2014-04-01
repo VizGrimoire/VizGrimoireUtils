@@ -206,7 +206,7 @@ def showProjectsTree(projects):
 
     # Add all roots with its leaves
     for key in projects:
-        if (key != "eclipse.platform"): pass
+        # if (key != "eclipse.platform"): pass
         data = projects[key]
         if (len(data['parent_project']) == 0):
             if not key in tree: tree[key] = []
@@ -303,12 +303,11 @@ def showDuplicatesList(projects):
     pprint.pprint(getReposDuplicateList(projects, "mls"))
 
 def create_projects_schema(cursor):
-    logging.info("Creating tables for project support")
-
     project_table = """
         CREATE TABLE projects (
             project_id int(11) NOT NULL AUTO_INCREMENT,
-            name varchar(255) NOT NULL,
+            id varchar(255) NOT NULL,
+            title varchar(255) NOT NULL,
             PRIMARY KEY (project_id)
         ) ENGINE=MyISAM DEFAULT CHARSET=utf8
     """
@@ -316,7 +315,6 @@ def create_projects_schema(cursor):
         CREATE TABLE project_repositories (
             project_id int(11) NOT NULL,
             data_source varchar(255) NOT NULL,
-            name varchar(255) NOT NULL,
             repository_id int(11) NOT NULL,
             UNIQUE (project_id, data_source, repository_id)
         ) ENGINE=MyISAM DEFAULT CHARSET=utf8
@@ -339,6 +337,21 @@ def create_projects_schema(cursor):
     cursor.execute(project_repositories_table)
     cursor.execute(project_children_table)
 
+def get_project_children(project_key, projects):
+    """returns and array with the project names of its children"""
+    children = []
+    for project in projects:
+        data = projects[project]
+        if (len(data['parent_project']) == 0):
+            continue
+        else:
+            parent = data['parent_project'][0]['id']
+            if parent == project_key:
+                children.append(project)
+                children += get_project_children(project, projects)
+    return children
+
+
 def showProjectReposProjectsMap(projects, automator_file):
     """Create tables for projects, project_repos and project_children"""
 
@@ -355,12 +368,26 @@ def showProjectReposProjectsMap(projects, automator_file):
     db = MySQLdb.connect(user = user, passwd = passwd, db = db)
     cursor = db.cursor()
     create_projects_schema(cursor)
+    logging.info("Projects tables created")
 
     # First step, load all projects in the table
+    projects_db = {}
     for key in projects:
-        logging.info("Project name %s" % projects[key]['title'])
-        q = "INSERT INTO projects (name) values (%s)"
-        cursor.execute(q, projects[key]['title'])
+        title = projects[key]['title']
+        q = "INSERT INTO projects (title, id) values (%s, %s)"
+        cursor.execute(q, (title, key))
+        projects_db[key] = db.insert_id()
+    logging.info("Projects added")
+
+    # Insert children for all projects
+    for project in projects_db:
+        children = get_project_children(project, projects)
+        for child in children:
+            q = "INSERT INTO project_children (project_id, subproject_id) values (%s, %s)"
+            project_id = projects_db[project]
+            subproject_id = projects_db[child]
+            cursor.execute(q, (project_id, subproject_id))
+    logging.info("Projects children added")
 
 if __name__ == '__main__':
     opts = read_options()
