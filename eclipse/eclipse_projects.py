@@ -352,8 +352,8 @@ def get_project_children(project_key, projects):
     return children
 
 
-def showProjectReposProjectsMap(projects, automator_file):
-    """Create tables for projects, project_repos and project_children"""
+def create_projects_db_info(projects, automator_file):
+    """Create and fill tables for projects, project_repos and project_children"""
 
     # Read db config
     parser = SafeConfigParser()
@@ -420,6 +420,6 @@ if __name__ == '__main__':
     elif opts.dups:
         showDuplicatesList(projects)
     elif opts.projects:
-        showProjectReposProjectsMap(projects, opts.automator_file)
+        create_projects_db_info(projects, opts.automator_file)
     else:
         showProjects(projects)
