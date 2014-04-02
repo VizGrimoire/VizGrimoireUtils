@@ -93,7 +93,7 @@ def read_options():
 
     return opts
 
-def getSCMURL(repo):
+def get_scm_url(repo):
     basic_scm_url = "http://git.eclipse.org/c"
     url = None
     if repo['path'] is not None:
@@ -107,32 +107,32 @@ def getSCMURL(repo):
                 url = None
     return url
 
-def getSCMRepos(project):
+def get_scm_repos(project):
     repos = project['source_repo']
     repos_list = []
     for repo in repos:
         if repo['url'] is None:
-            url = getSCMURL(repo)
+            url = get_scm_url(repo)
             if url is None: continue
             repos_list.append(url.replace("/c/","/gitroot/"))
         else:
             repos_list.append(repo['url'].replace("/c/","/gitroot/"))
     return repos_list
 
-def parseRepos(repos):
+def parse_repos(repos):
     repos_list = []
     for repo in repos:
         repos_list.append(repo['url'])
     return repos_list
 
-def getITSRepos(project):
+def get_its_repos(project):
     repos = project['bugzilla']
     repos_list = []
     for repo in repos:
         repos_list.append(urllib.unquote(repo['query_url']))
     return repos_list
 
-def getMLSRepos(project):
+def get_mls_repos(project):
     repos_list = []
     info = project['dev_list']
     if not isinstance(info, list): # if list, no data
@@ -140,20 +140,37 @@ def getMLSRepos(project):
             repos_list.append(info['url'])
     return repos_list
 
-def parseProject(data):
+def get_irc_repos(project):
+    repos_list = []
+    # We don't have data about IRC in projects JSON
+    return repos_list
+
+def get_scr_repos(project):
+    repos_list = []
+    repos = get_scm_repos(project)
+
+    for repo in repos:
+        if "gitroot" in repo:
+            gerrit_project = repo.replace("http://git.eclipse.org/gitroot/","")
+            gerrit_project = gerrit_project.replace(".git","")
+            repos_list.append(gerrit_project)
+    return repos_list
+
+
+def parse_project(data):
     print("Title: " + data['title'])
     print("ID: "+data['id'][0]['value']) # safe_value other field
     if (len(data['id'])>1):
         logging.info("More than one identifier")
-    print("SCM: " + ",".join(getSCMRepos(data)))
-    print("ITS: " + ",".join(getITSRepos(data)))
+    print("SCM: " + ",".join(get_scm_repos(data)))
+    print("ITS: " + ",".join(get_its_repos(data)))
     if not isinstance(data['dev_list'], list):
         if data['dev_list']['url'] is None:
             logging.warn("URL is None for MLS")
         else:
             print("MLS: " + data['dev_list']['url'])
-    print("Forums: " + ",".join(parseRepos(data['forums'])))
-    print("Wiki: " + ",".join(parseRepos(data['wiki_url'])))
+    print("Forums: " + ",".join(parse_repos(data['forums'])))
+    print("Wiki: " + ",".join(parse_repos(data['wiki_url'])))
     if (len(data['parent_project'])>1):
         logging.info("More than one parent")
     if (len(data['parent_project'])>0):
@@ -162,29 +179,39 @@ def parseProject(data):
         print(data['github_repos'])
     print("---")
 
-def getReposList(projects, kind):
+def get_repos_list(projects, data_source):
     repos_all = []
     for project in projects:
-        if kind == "its":
-            repos = getITSRepos(projects[project])
-        elif kind == "scm":
-            repos = getSCMRepos(projects[project])
-        elif kind == "mls":
-            repos = getMLSRepos(projects[project])
+        repos = get_repos_list_project(project, projects, data_source)
         repos_all += repos
     return repos_all
 
-def getReposDuplicateList(projects, kind):
+def get_repos_list_project(project, projects, data_source):
+    repos = []
+    if data_source == "its":
+        repos = get_its_repos(projects[project])
+    elif data_source == "scm":
+        repos = get_scm_repos(projects[project])
+    elif data_source == "mls":
+        repos = get_mls_repos(projects[project])
+    elif data_source == "scr":
+        repos = get_scr_repos(projects[project])
+    elif data_source == "irc":
+        repos = get_irc_repos(projects[project])
+    return repos
+
+
+def get_repos_duplicate_list(projects, kind):
     repos_dup = {}
     repos_seen = {}
 
     for project in projects:
         if kind == "its":
-            repos = getITSRepos(projects[project])
+            repos = get_its_repos(projects[project])
         if kind == "scm":
-            repos = getSCMRepos(projects[project])
+            repos = get_scm_repos(projects[project])
         if kind == "mls":
-            repos = getMLSRepos(projects[project])
+            repos = get_mls_repos(projects[project])
         for repo in repos:
             if repo in repos_seen:
                 if not repo in repos_dup:
@@ -194,12 +221,12 @@ def getReposDuplicateList(projects, kind):
             else: repos_seen[repo] = project
     return repos_dup
 
-def showFields(project):
+def show_fields(project):
     for key in project:
         print(key)
 
 # We build the tree from leaves to roots
-def showProjectsTree(projects):
+def show_projects_tree(projects):
     import pprint
 
     tree = {}
@@ -218,19 +245,19 @@ def showProjectsTree(projects):
 
     pprint.pprint(tree)
 
-def showProjects(projects):
+def show_projects(projects):
     total_projects = 0
 
     for key in projects:
         total_projects += 1
-        parseProject(projects[key])
+        parse_project(projects[key])
 
-    scm_total = len(getReposList(projects, "scm"))
-    its_total = len(getReposList(projects, "its"))
-    mls_total = len(getReposList(projects, "mls"))
-    scm_dup = len(getReposDuplicateList(projects, "scm").keys())
-    its_dup = len(getReposDuplicateList(projects, "its").keys())
-    mls_dup = len(getReposDuplicateList(projects, "mls").keys())
+    scm_total = len(get_repos_list(projects, "scm"))
+    its_total = len(get_repos_list(projects, "its"))
+    mls_total = len(get_repos_list(projects, "mls"))
+    scm_dup = len(get_repos_duplicate_list(projects, "scm").keys())
+    its_dup = len(get_repos_duplicate_list(projects, "its").keys())
+    mls_dup = len(get_repos_duplicate_list(projects, "mls").keys())
 
     logging.info("Total projects: " + str(total_projects))
     # Including all (svn, cvs, git ...)
@@ -238,11 +265,11 @@ def showProjects(projects):
     logging.info("Total its: " + str(its_total) + " (" + str(its_dup)+ " duplicates)")
     logging.info("Total mls: " + str(mls_total) + " (" + str(mls_dup)+ " duplicates)")
 
-def showReposSCMList(projects):
+def show_repos_scm_list(projects):
     rlist = ""
     all_repos = []
     for key in projects:
-        repos = getSCMRepos(projects[key])
+        repos = get_scm_repos(projects[key])
         all_repos += repos
     unique_repos = list(set(all_repos))
     rlist += "\n".join(unique_repos)+"\n"
@@ -258,32 +285,32 @@ def showReposSCMList(projects):
             logging.warning("SCM URL special " + line)
         print("git clone " + line + " scm/" + target)
 
-def showReposITSList(projects):
+def show_repos_its_list(projects):
     rlist = ""
     all_repos = []
     for key in projects:
-        repos = getITSRepos(projects[key])
+        repos = get_its_repos(projects[key])
         all_repos += repos
     unique_repos = list(set(all_repos))
     rlist += "'"+"','".join(unique_repos)
     rlist += "'"
     print(rlist)
 
-def showReposMLSList(projects):
+def show_repos_mls_list(projects):
     rlist = ""
     all_repos = []
     for key in projects:
-        repos = getMLSRepos(projects[key])
+        repos = get_mls_repos(projects[key])
         all_repos += repos
     unique_repos = list(set(all_repos))
     rlist += "'"+"','".join(unique_repos)
     rlist += "'"
     print(rlist)
 
-def showReposSCRList(projects):
+def show_repos_scr_list(projects):
     all_repos = []
     for key in projects:
-        repos = getSCMRepos(projects[key])
+        repos = get_scm_repos(projects[key])
         all_repos += repos
     unique_repos = list(set(all_repos))
     projects = ""
@@ -296,11 +323,11 @@ def showReposSCRList(projects):
     projects = projects[:-1]
     print(projects)
 
-def showDuplicatesList(projects):
+def show_duplicates_list(projects):
     import pprint
-    pprint.pprint(getReposDuplicateList(projects, "its"))
-    pprint.pprint(getReposDuplicateList(projects, "scm"))
-    pprint.pprint(getReposDuplicateList(projects, "mls"))
+    pprint.pprint(get_repos_duplicate_list(projects, "its"))
+    pprint.pprint(get_repos_duplicate_list(projects, "scm"))
+    pprint.pprint(get_repos_duplicate_list(projects, "mls"))
 
 def create_projects_schema(cursor):
     project_table = """
@@ -314,9 +341,9 @@ def create_projects_schema(cursor):
     project_repositories_table = """
         CREATE TABLE project_repositories (
             project_id int(11) NOT NULL,
-            data_source varchar(255) NOT NULL,
-            repository_id int(11) NOT NULL,
-            UNIQUE (project_id, data_source, repository_id)
+            data_source varchar(32) NOT NULL,
+            repository_name varchar(255) NOT NULL,
+            UNIQUE (project_id, data_source, repository_name)
         ) ENGINE=MyISAM DEFAULT CHARSET=utf8
     """
     project_children_table = """
@@ -351,6 +378,10 @@ def get_project_children(project_key, projects):
                 children += get_project_children(project, projects)
     return children
 
+def get_project_repos(project, projects, data_source):
+    """get all repositories for a project in a data source"""
+    repos = get_repos_list_project(project, projects, data_source)
+    return repos
 
 def create_projects_db_info(projects, automator_file):
     """Create and fill tables for projects, project_repos and project_children"""
@@ -389,6 +420,26 @@ def create_projects_db_info(projects, automator_file):
             cursor.execute(q, (project_id, subproject_id))
     logging.info("Projects children added")
 
+    def insert_repos(project_id, repos, data_source):
+        for repo in repos:
+            q = "INSERT INTO project_repositories VALUES (%s, %s, %s)"
+            cursor.execute(q, (project_id, data_source, repo))
+
+    # Insert repositories for all projects
+    for project in projects_db:
+        repos = get_repos_list_project(project, projects, "scm")
+        insert_repos(projects_db[project], repos, "scm")
+        repos = get_repos_list_project(project, projects, "its")
+        insert_repos(projects_db[project], repos, "its")
+        repos = get_repos_list_project(project, projects, "mls")
+        insert_repos(projects_db[project], repos, "mls")
+        repos = get_repos_list_project(project, projects, "scr")
+        insert_repos(projects_db[project], repos, "scr")
+        repos = get_repos_list_project(project, projects, "irc")
+        insert_repos(projects_db[project], repos, "irc")
+
+    logging.info("Projects repositories added")
+
 if __name__ == '__main__':
     opts = read_options()
     metaproject = opts.url.replace("/","_")
@@ -408,18 +459,18 @@ if __name__ == '__main__':
     projects = projects['projects']
 
     if opts.tree:
-        showProjectsTree(projects)
+        show_projects_tree(projects)
     elif opts.scm:
-        showReposSCMList(projects)
+        show_repos_scm_list(projects)
     elif opts.its:
-        showReposITSList(projects)
+        show_repos_its_list(projects)
     elif opts.mls:
-        showReposMLSList(projects)
+        show_repos_mls_list(projects)
     elif opts.scr:
-        showReposSCRList(projects)
+        show_repos_scr_list(projects)
     elif opts.dups:
-        showDuplicatesList(projects)
+        show_duplicates_list(projects)
     elif opts.projects:
         create_projects_db_info(projects, opts.automator_file)
     else:
-        showProjects(projects)
+        show_projects(projects)
