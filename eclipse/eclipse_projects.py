@@ -336,7 +336,7 @@ def create_projects_schema(cursor):
             id varchar(255) NOT NULL,
             title varchar(255) NOT NULL,
             PRIMARY KEY (project_id)
-        ) ENGINE=MyISAM DEFAULT CHARSET=utf8
+        ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
     """
     project_repositories_table = """
         CREATE TABLE project_repositories (
@@ -344,14 +344,14 @@ def create_projects_schema(cursor):
             data_source varchar(32) NOT NULL,
             repository_name varchar(255) NOT NULL,
             UNIQUE (project_id, data_source, repository_name)
-        ) ENGINE=MyISAM DEFAULT CHARSET=utf8
+        ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
     """
     project_children_table = """
         CREATE TABLE project_children (
             project_id int(11) NOT NULL,
             subproject_id int(11) NOT NULL,
             UNIQUE (project_id, subproject_id)
-        ) ENGINE=MyISAM DEFAULT CHARSET=utf8
+        ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
     """
 
     # The data in tables is created automatically.
