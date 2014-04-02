@@ -145,7 +145,7 @@ def get_irc_repos(project):
     # We don't have data about IRC in projects JSON
     return repos_list
 
-def get_scr_repos(project):
+def get_scr_repos(project, scr_url):
     repos_list = []
     repos = get_scm_repos(project)
 
@@ -153,7 +153,7 @@ def get_scr_repos(project):
         if "gitroot" in repo:
             gerrit_project = repo.replace("http://git.eclipse.org/gitroot/","")
             gerrit_project = gerrit_project.replace(".git","")
-            repos_list.append(gerrit_project)
+            repos_list.append(scr_url+"_"+gerrit_project)
     return repos_list
 
 
@@ -186,7 +186,7 @@ def get_repos_list(projects, data_source):
         repos_all += repos
     return repos_all
 
-def get_repos_list_project(project, projects, data_source):
+def get_repos_list_project(project, projects, data_source, url = None):
     repos = []
     if data_source == "its":
         repos = get_its_repos(projects[project])
@@ -195,7 +195,7 @@ def get_repos_list_project(project, projects, data_source):
     elif data_source == "mls":
         repos = get_mls_repos(projects[project])
     elif data_source == "scr":
-        repos = get_scr_repos(projects[project])
+        repos = get_scr_repos(projects[project], url)
     elif data_source == "irc":
         repos = get_irc_repos(projects[project])
     return repos
@@ -395,6 +395,7 @@ def create_projects_db_info(projects, automator_file):
     user = parser.get('generic','db_user')
     passwd = parser.get('generic','db_password')
     db = parser.get('generic','db_identities')
+    scr_url = parser.get('gerrit','trackers')
 
     db = MySQLdb.connect(user = user, passwd = passwd, db = db)
     cursor = db.cursor()
@@ -433,7 +434,7 @@ def create_projects_db_info(projects, automator_file):
         insert_repos(projects_db[project], repos, "its")
         repos = get_repos_list_project(project, projects, "mls")
         insert_repos(projects_db[project], repos, "mls")
-        repos = get_repos_list_project(project, projects, "scr")
+        repos = get_repos_list_project(project, projects, "scr", scr_url)
         insert_repos(projects_db[project], repos, "scr")
         repos = get_repos_list_project(project, projects, "irc")
         insert_repos(projects_db[project], repos, "irc")
