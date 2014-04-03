@@ -234,6 +234,8 @@ def show_fields(project):
 def show_projects_tree(projects, html = False):
 
     tree = ""
+    eclipse_projects_url = "https://projects.eclipse.org/projects"
+
     if (html):
         tree ="<html><head>\n"
         tree += "<style>\n"
@@ -251,7 +253,7 @@ def show_projects_tree(projects, html = False):
                     children.append(key)
         return children
 
-    def show_tree(project, level):
+    def show_tree(project, level, projects_url):
         tree = ""
         children = find_children(project)
         if len(children) == 0: return tree
@@ -259,14 +261,15 @@ def show_projects_tree(projects, html = False):
         level += 1
         for child in children:
             level_str = ""
-            child_url = "<a href='?project=%s'>%s</a>" % (child, child)
             if (html):
+                child_url = "<a href='?project=%s'>%s</a>" % (child, child)
+                upstream_url = "<a href='%s/%s'>(+)</a>" % (projects_url, child)
                 for i in range(0, level): level_str += " "
-                tree += level_str + "<li>%s\n" % (child_url)
+                tree += level_str + "<li>%s %s\n" % (child_url, upstream_url)
             else:
                 for i in range(0, level): level_str += "-"
                 tree += level_str + " " + child + "\n"
-            tree += show_tree(child, level)
+            tree += show_tree(child, level, projects_url)
             if (html): tree += "</li>\n"
         if html: tree +="</ul>\n"
         return tree
@@ -276,11 +279,12 @@ def show_projects_tree(projects, html = False):
     for key in projects:
         data = projects[key]
         project_url = "<a href='?project=%s'>%s</a>" % (key, key)
+        upstream_url = "<a href='%s/%s'>(+)</a>" % (eclipse_projects_url, key)
 
         if (len(data['parent_project']) == 0):
-            if html: tree +="<ul><li>%s\n" % project_url
+            if html: tree +="<ul><li>%s %s\n" % (project_url,upstream_url)
             else: tree += key+"\n"
-            tree += show_tree(key, level)
+            tree += show_tree(key, level, eclipse_projects_url)
             if html: tree +="</li></ul>\n"
 
     if (html): tree +="</body></html>"
