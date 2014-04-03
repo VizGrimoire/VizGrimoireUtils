@@ -89,6 +89,12 @@ def read_options():
                       dest="automator_file",
                       help="Automator config file")
 
+    parser.add_option("--affiliations",
+                      action="store",
+                      dest="affiliations_file",
+                      help="Creates mapping between identities and affiliations")
+
+
     (opts, args) = parser.parse_args()
     if len(args) != 0:
         parser.error("Wrong number of arguments")
@@ -262,7 +268,7 @@ def show_projects_tree(projects, html = False):
         for child in children:
             level_str = ""
             if (html):
-                child_url = "<a href='?project=%s'>%s</a>" % (child, child)
+                child_url = "<a href='project.html?project=%s'>%s</a>" % (child, child)
                 upstream_url = "<a href='%s/%s'>(+)</a>" % (projects_url, child)
                 for i in range(0, level): level_str += " "
                 tree += level_str + "<li>%s %s\n" % (child_url, upstream_url)
@@ -278,7 +284,7 @@ def show_projects_tree(projects, html = False):
     level = 0 # initial level
     for key in projects:
         data = projects[key]
-        project_url = "<a href='?project=%s'>%s</a>" % (key, key)
+        project_url = "<a href='project.html?project=%s'>%s</a>" % (key, key)
         upstream_url = "<a href='%s/%s'>(+)</a>" % (eclipse_projects_url, key)
 
         if (len(data['parent_project']) == 0):
@@ -429,6 +435,59 @@ def get_project_repos(project, projects, data_source):
     repos = get_repos_list_project(project, projects, data_source)
     return repos
 
+def set_identities_aff(identities, aff):
+    """Search for upeople_id for identities and link it to aff"""
+    logging.info("linking %s to %s" % (aff, identities))
+
+def create_affiliations(committers):
+    """Insert into the database the list of affiliations"""
+    all_affs = []
+    for person in committers:
+        pdata = committers[person]
+        if not "affiliations" in pdata: continue
+        for aff in pdata['affiliations']:
+            person_aff = pdata['affiliations'][aff]['name']
+            all_affs.append(person_aff)
+    all_affs = list(set(all_affs))
+    print(all_affs)
+    logging.info("Total number of affiliations %i", len(all_affs))
+
+def create_affiliations_identities(affiliations_file):
+    """map identities to affiliations using data from affiliations_file."""
+
+    if not os.path.isfile(affiliations_file):
+        logging.error(affiliations_file + " does not exists.")
+        return
+    affiliations = open(affiliations_file, 'r').read()
+    committers = json.loads(affiliations)['committers']
+
+    create_affiliations(committers)
+
+    npeople = 0
+    npeople_aff = 0
+    for person in committers:
+        pdata = committers[person]
+        npeople += 1
+        if not "affiliations" in pdata: continue
+        npeople_aff += 1
+
+        # look for this identifiers in grimoire identities table
+        person_identifiers = []
+        if 'email' in pdata:
+            for email in pdata['email']:
+                person_identifiers.append(email)
+        person_identifiers.append(pdata['id'])
+        person_identifiers.append(pdata['primary'])
+        person_identifiers.append(pdata['first']+" "+pdata['last'])
+        person_identifiers = list(set(person_identifiers))
+
+        person_affs = pdata['affiliations']
+        for aff in person_affs:
+            person_aff = person_affs[aff]['name']
+            set_identities_aff(person_identifiers, person_aff)
+    logging.info("Total number of people %i", npeople)
+    logging.info("Total number of people with affiliations %i", npeople_aff)
+
 def create_projects_db_info(projects, automator_file):
     """Create and fill tables for projects, project_repos and project_children"""
 
@@ -519,5 +578,7 @@ if __name__ == '__main__':
         show_duplicates_list(projects)
     elif opts.projects:
         create_projects_db_info(projects, opts.automator_file)
+    elif opts.affiliations_file is not None:
+        create_affiliations_identities(opts.affiliations_file)
     else:
         show_projects(projects)
