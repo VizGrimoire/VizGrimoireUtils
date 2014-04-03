@@ -227,23 +227,32 @@ def show_fields(project):
 
 # We build the tree from leaves to roots
 def show_projects_tree(projects):
-    import pprint
 
-    tree = {}
+    def find_children(project):
+        children =[]
+        for key in projects:
+            data = projects[key]
+            if (len(data['parent_project']) != 0):
+                if project == data['parent_project'][0]['id']:
+                    children.append(key)
+        return children
 
-    # Add all roots with its leaves
+    def show_tree(project, level):
+        children = find_children(project)
+        level += 1
+        for child in children:
+            level_str = ""
+            for i in range(0, level): level_str += "-"
+            logging.info(level_str + " " + child)
+            show_tree(child, level)
+
+    # First detect roots, the build children recursively
+    level = 0 # initial level
     for key in projects:
-        # if (key != "eclipse.platform"): pass
         data = projects[key]
         if (len(data['parent_project']) == 0):
-            if not key in tree: tree[key] = []
-        else:
-            parent = data['parent_project'][0]['id']
-            if not parent in tree:
-                tree[parent] = []
-            tree[parent].append(key)
-
-    pprint.pprint(tree)
+            logging.info(key)
+            show_tree(key, level)
 
 def show_projects(projects):
     total_projects = 0
