@@ -48,6 +48,11 @@ def read_options():
                       dest="tree",
                       default=False,
                       help="Show the projects Tree structure")
+    parser.add_option("--html",
+                      action="store_true",
+                      dest="tree_html",
+                      default=False,
+                      help="Create HTML for the projects Tree structure")
     parser.add_option("-s", "--scm",
                       action="store_true",
                       dest="scm",
@@ -226,7 +231,10 @@ def show_fields(project):
         print(key)
 
 # We build the tree from leaves to roots
-def show_projects_tree(projects):
+def show_projects_tree(projects, html = False):
+
+    tree = ""
+    if (html): tree ="<html><head></head><body>\n"
 
     def find_children(project):
         children =[]
@@ -238,21 +246,37 @@ def show_projects_tree(projects):
         return children
 
     def show_tree(project, level):
+        tree = ""
         children = find_children(project)
+        if len(children) == 0: return tree
+        if html: tree +="<ul>\n"
         level += 1
         for child in children:
             level_str = ""
-            for i in range(0, level): level_str += "-"
-            logging.info(level_str + " " + child)
-            show_tree(child, level)
+            if (html):
+                for i in range(0, level): level_str += " "
+                tree += level_str + " " +"<li>%s\n" % (child)
+            else:
+                for i in range(0, level): level_str += "-"
+                tree += level_str + " " + child + "\n"
+            tree += show_tree(child, level)
+            if (html): tree += "</li>\n"
+        if html: tree +="</ul>\n"
+        return tree
 
     # First detect roots, the build children recursively
     level = 0 # initial level
     for key in projects:
         data = projects[key]
         if (len(data['parent_project']) == 0):
-            logging.info(key)
-            show_tree(key, level)
+            if html: tree +="<ul><li>%s\n" % (key)
+            else: tree += key+"\n"
+            tree += show_tree(key, level)
+            if html: tree +="</li></ul>\n"
+
+    if (html): tree +="</body></html>"
+
+    print tree
 
 def show_projects(projects):
     total_projects = 0
@@ -469,7 +493,7 @@ if __name__ == '__main__':
     projects = projects['projects']
 
     if opts.tree:
-        show_projects_tree(projects)
+        show_projects_tree(projects, opts.tree_html)
     elif opts.scm:
         show_repos_scm_list(projects)
     elif opts.its:
