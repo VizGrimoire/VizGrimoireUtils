@@ -234,7 +234,13 @@ def show_fields(project):
 def show_projects_tree(projects, html = False):
 
     tree = ""
-    if (html): tree ="<html><head></head><body>\n"
+    if (html):
+        tree ="<html><head>\n"
+        tree += "<style>\n"
+        tree += "li a {text-decoration:none;}\n"
+        tree += "li a:hover {color: #fff;background-color: #369;}\n"
+        tree += "</style>\n"
+        tree += "</head><body>\n"
 
     def find_children(project):
         children =[]
@@ -253,9 +259,10 @@ def show_projects_tree(projects, html = False):
         level += 1
         for child in children:
             level_str = ""
+            child_url = "<a href='?project=%s'>%s</a>" % (child, child)
             if (html):
                 for i in range(0, level): level_str += " "
-                tree += level_str + " " +"<li>%s\n" % (child)
+                tree += level_str + "<li>%s\n" % (child_url)
             else:
                 for i in range(0, level): level_str += "-"
                 tree += level_str + " " + child + "\n"
@@ -268,8 +275,10 @@ def show_projects_tree(projects, html = False):
     level = 0 # initial level
     for key in projects:
         data = projects[key]
+        project_url = "<a href='?project=%s'>%s</a>" % (key, key)
+
         if (len(data['parent_project']) == 0):
-            if html: tree +="<ul><li>%s\n" % (key)
+            if html: tree +="<ul><li>%s\n" % project_url
             else: tree += key+"\n"
             tree += show_tree(key, level)
             if html: tree +="</li></ul>\n"
