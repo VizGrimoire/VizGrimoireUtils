@@ -462,7 +462,7 @@ def set_identities_aff(identities, aff, automator_file):
                 VALUES ('%s','%s')
             """ % (upid, aff)
             res = cursor.execute(q)
-        logging.info("Server upeople_id found for  %s" % identities)
+        # logging.info("Server upeople_id found for  %s" % identities)
         linked = True
 
 
