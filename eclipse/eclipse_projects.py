@@ -31,6 +31,7 @@ import MySQLdb
 import json
 import logging
 from optparse import OptionParser
+import pprint
 import os.path
 import sys
 import urllib2, urllib
@@ -439,9 +440,28 @@ def get_project_repos(project, projects, data_source):
     repos = get_repos_list_project(project, projects, data_source)
     return repos
 
-def set_identities_aff(identities, aff):
+def set_identities_aff(identities, aff, automator_file):
     """Search for upeople_id for identities and link it to aff"""
+    linked = False
     logging.info("linking %s to %s" % (aff, identities))
+    identities = [identity.replace("'","\\'") for identity in identities]
+    identities = ",".join(["'"+identity+"'" for identity in identities])
+
+    # Search for upeople_id
+    cursor = get_db_cursor_identities(automator_file)
+    q = "SELECT upeople_id from identities where identity IN (%s)" % identities
+    res = execute_query(cursor, q)
+    if not isinstance(res['upeople_id'], list): res['upeople_id']=[res['upeople_id']]
+    print(res)
+    if len(res['upeople_id']) == 1:
+        logging.info("upeople_id %s found for %s" % (res['upeople_id'][0], identities))
+        linked = True
+    elif len(res['upeople_id']) == 0:
+        logging.info("Identities not found %s", identities)
+    elif len(res['upeople_id']) > 1:
+        logging.info("Server upeople_id found for  %s" % identities)
+
+    return linked
 
 
 def create_tables_affiliations(cursor):
@@ -488,19 +508,51 @@ def get_affiliations(committers):
 
     return all_affs
 
+def get_affiliations_db_data(automator_file):
+    """Returns affiliations named with ids in db"""
+    cursor = get_db_cursor_identities(automator_file)
+    res = execute_query(cursor, "SELECT * from companies")
+    return res
+
+# From GrimoireSQL
+def execute_query (cursor, sql):
+    result = {}
+    cursor.execute(sql)
+    rows = cursor.rowcount
+    columns = cursor.description
+
+    for column in columns:
+        result[column[0]] = []
+    if rows > 1:
+        for value in cursor.fetchall():
+            for (index,column) in enumerate(value):
+                result[columns[index][0]].append(column)
+    elif rows == 1:
+        value = cursor.fetchone()
+        for i in range (0, len(columns)):
+            result[columns[i][0]] = value[i]
+    return result
+
+def get_db_cursor_identities(automator_file):
+    """ One global cursor shared in all code """
+    global _cursor_identities
+
+    if (_cursor_identities is None):
+        parser = get_automator_parser(automator_file)
+        user = parser.get('generic','db_user')
+        passwd = parser.get('generic','db_password')
+        db = parser.get('generic','db_identities')
+
+        db = MySQLdb.connect(user = user, passwd = passwd, db = db)
+        _cursor_identities = db.cursor()
+
+    return _cursor_identities
 
 
 def create_affiliations(committers, automator_file):
     """Insert into the database the list of affiliations"""
 
-    # Prepare DB
-    parser = get_automator_parser(automator_file)
-    user = parser.get('generic','db_user')
-    passwd = parser.get('generic','db_password')
-    db = parser.get('generic','db_identities')
-
-    db = MySQLdb.connect(user = user, passwd = passwd, db = db)
-    cursor = db.cursor()
+    cursor = get_db_cursor_identities(automator_file)
 
     create_tables_affiliations(cursor)
 
@@ -523,10 +575,11 @@ def create_affiliations_identities(affiliations_file, automator_file):
 
     create_affiliations(committers, automator_file)
 
-    sys.exit()
+    affs_id = get_affiliations_db_data(automator_file)
 
     npeople = 0
     npeople_aff = 0
+    npeople_found = 0
     for person in committers:
         pdata = committers[person]
         npeople += 1
@@ -546,9 +599,11 @@ def create_affiliations_identities(affiliations_file, automator_file):
         person_affs = pdata['affiliations']
         for aff in person_affs:
             person_aff = person_affs[aff]['name']
-            set_identities_aff(person_identifiers, person_aff)
+            if set_identities_aff(person_identifiers, person_aff, automator_file):
+                npeople_found += 1
     logging.info("Total number of people %i", npeople)
     logging.info("Total number of people with affiliations %i", npeople_aff)
+    logging.info("Total number of people found in grimoire %i", npeople_found)
 
 def get_automator_parser(automator_file):
     # Read db config
@@ -617,6 +672,8 @@ if __name__ == '__main__':
     opts = read_options()
     metaproject = opts.url.replace("/","_")
     json_file = "./"+metaproject+".json"
+    # global connection to the db
+    _cursor_identities = None
 
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s')
     logging.info("Starting Eclipse projects analysis from: " +  opts.url)
