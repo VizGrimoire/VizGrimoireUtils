@@ -102,6 +102,10 @@ def read_options():
     if (opts.projects and not opts.automator_file):
         parser.error("projects option needs automator config file")
 
+    if (opts.affiliations_file and not opts.automator_file):
+        parser.error("affiliations option needs automator config file")
+
+
     return opts
 
 def get_scm_url(repo):
@@ -439,8 +443,40 @@ def set_identities_aff(identities, aff):
     """Search for upeople_id for identities and link it to aff"""
     logging.info("linking %s to %s" % (aff, identities))
 
-def create_affiliations(committers):
-    """Insert into the database the list of affiliations"""
+
+def create_tables_affiliations(cursor):
+    # The data in tables is created automatically.
+    # No worries about dropping tables.
+    cursor.execute("DROP TABLE IF EXISTS companies")
+    cursor.execute("DROP TABLE IF EXISTS upeople_companies")
+
+    query = "CREATE TABLE IF NOT EXISTS companies (" + \
+            "id int(11) NOT NULL AUTO_INCREMENT," + \
+            "name varchar(255) NOT NULL," + \
+            "PRIMARY KEY (id)" + \
+            ") ENGINE=MyISAM DEFAULT CHARSET=utf8"
+    cursor.execute(query)
+
+    query = "CREATE TABLE IF NOT EXISTS upeople_companies (" + \
+            "id int(11) NOT NULL AUTO_INCREMENT," + \
+            "upeople_id int(11) NOT NULL," + \
+            "company_id int(11) NOT NULL," + \
+            "init datetime NOT NULL default '1900-01-01'," + \
+            "end datetime NOT NULL default '2100-01-01'," + \
+            "PRIMARY KEY (id)" + \
+            ") ENGINE=MyISAM DEFAULT CHARSET=utf8"
+    cursor.execute(query)
+
+    try:
+        query = "CREATE INDEX upcom_up ON upeople_companies (upeople_id);"
+        cursor.execute(query)
+        query = "CREATE INDEX upcom_c ON upeople_companies (company_id);"
+        cursor.execute(query)
+    except Exception:
+        print "Indexes upc_up and upcom_c already created"
+    return
+
+def get_affiliations(committers):
     all_affs = []
     for person in committers:
         pdata = committers[person]
@@ -449,10 +485,34 @@ def create_affiliations(committers):
             person_aff = pdata['affiliations'][aff]['name']
             all_affs.append(person_aff)
     all_affs = list(set(all_affs))
-    print(all_affs)
+
+    return all_affs
+
+
+
+def create_affiliations(committers, automator_file):
+    """Insert into the database the list of affiliations"""
+
+    # Prepare DB
+    parser = get_automator_parser(automator_file)
+    user = parser.get('generic','db_user')
+    passwd = parser.get('generic','db_password')
+    db = parser.get('generic','db_identities')
+
+    db = MySQLdb.connect(user = user, passwd = passwd, db = db)
+    cursor = db.cursor()
+
+    create_tables_affiliations(cursor)
+
+    all_affs = get_affiliations(committers)
+
+    for aff in all_affs:
+        q = "INSERT INTO companies (name) VALUES ('%s')" % aff
+        cursor.execute(q)
+
     logging.info("Total number of affiliations %i", len(all_affs))
 
-def create_affiliations_identities(affiliations_file):
+def create_affiliations_identities(affiliations_file, automator_file):
     """map identities to affiliations using data from affiliations_file."""
 
     if not os.path.isfile(affiliations_file):
@@ -461,7 +521,9 @@ def create_affiliations_identities(affiliations_file):
     affiliations = open(affiliations_file, 'r').read()
     committers = json.loads(affiliations)['committers']
 
-    create_affiliations(committers)
+    create_affiliations(committers, automator_file)
+
+    sys.exit()
 
     npeople = 0
     npeople_aff = 0
@@ -488,15 +550,20 @@ def create_affiliations_identities(affiliations_file):
     logging.info("Total number of people %i", npeople)
     logging.info("Total number of people with affiliations %i", npeople_aff)
 
-def create_projects_db_info(projects, automator_file):
-    """Create and fill tables for projects, project_repos and project_children"""
-
+def get_automator_parser(automator_file):
     # Read db config
     parser = SafeConfigParser()
     fd = open(automator_file, 'r')
     parser.readfp(fd)
     fd.close()
 
+    return parser
+
+def create_projects_db_info(projects, automator_file):
+    """Create and fill tables for projects, project_repos and project_children"""
+
+    # Read db config
+    parser = get_automator_parser(automator_file)
     user = parser.get('generic','db_user')
     passwd = parser.get('generic','db_password')
     db = parser.get('generic','db_identities')
@@ -579,6 +646,6 @@ if __name__ == '__main__':
     elif opts.projects:
         create_projects_db_info(projects, opts.automator_file)
     elif opts.affiliations_file is not None:
-        create_affiliations_identities(opts.affiliations_file)
+        create_affiliations_identities(opts.affiliations_file, opts.automator_file)
     else:
         show_projects(projects)
