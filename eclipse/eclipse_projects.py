@@ -443,7 +443,7 @@ def get_project_repos(project, projects, data_source):
 def set_identities_aff(identities, aff, automator_file):
     """Search for upeople_id for identities and link it to aff"""
     linked = False
-    logging.info("linking %s to %s" % (aff, identities))
+    # logging.info("linking %s to %s" % (aff, identities))
     identities = [identity.replace("'","\\'") for identity in identities]
     identities = ",".join(["'"+identity+"'" for identity in identities])
 
@@ -452,14 +452,19 @@ def set_identities_aff(identities, aff, automator_file):
     q = "SELECT upeople_id from identities where identity IN (%s)" % identities
     res = execute_query(cursor, q)
     if not isinstance(res['upeople_id'], list): res['upeople_id']=[res['upeople_id']]
-    print(res)
-    if len(res['upeople_id']) == 1:
-        logging.info("upeople_id %s found for %s" % (res['upeople_id'][0], identities))
-        linked = True
-    elif len(res['upeople_id']) == 0:
-        logging.info("Identities not found %s", identities)
-    elif len(res['upeople_id']) > 1:
+    if len(res['upeople_id']) == 0:
+        # logging.info("Identities not found %s", identities)
+        pass
+    else:
+        for upid in res['upeople_id']:
+            q = """
+                INSERT into upeople_companies (upeople_id, company_id)
+                VALUES ('%s','%s')
+            """ % (upid, aff)
+            res = cursor.execute(q)
         logging.info("Server upeople_id found for  %s" % identities)
+        linked = True
+
 
     return linked
 
@@ -599,7 +604,9 @@ def create_affiliations_identities(affiliations_file, automator_file):
         person_affs = pdata['affiliations']
         for aff in person_affs:
             person_aff = person_affs[aff]['name']
-            if set_identities_aff(person_identifiers, person_aff, automator_file):
+            person_aff_id = affs_id['id'][affs_id['name'].index(person_aff)]
+            if set_identities_aff(person_identifiers, person_aff_id, automator_file):
+                print(person_identifiers)
                 npeople_found += 1
     logging.info("Total number of people %i", npeople)
     logging.info("Total number of people with affiliations %i", npeople_aff)
