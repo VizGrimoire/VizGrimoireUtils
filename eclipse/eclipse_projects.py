@@ -449,7 +449,7 @@ def set_identities_aff(identities, aff, automator_file):
 
     # Search for upeople_id
     cursor = get_db_cursor_identities(automator_file)
-    q = "SELECT upeople_id from identities where identity IN (%s)" % identities
+    q = "SELECT DISTINCT(upeople_id) from identities where identity IN (%s)" % identities
     res = execute_query(cursor, q)
     if not isinstance(res['upeople_id'], list): res['upeople_id']=[res['upeople_id']]
     if len(res['upeople_id']) == 0:
@@ -595,10 +595,14 @@ def create_affiliations_identities(affiliations_file, automator_file):
         person_identifiers = []
         if 'email' in pdata:
             for email in pdata['email']:
-                person_identifiers.append(email)
-        person_identifiers.append(pdata['id'])
-        person_identifiers.append(pdata['primary'])
-        person_identifiers.append(pdata['first']+" "+pdata['last'])
+                if email <>'':
+                    person_identifiers.append(email)
+        if pdata['id'] <> '':
+            person_identifiers.append(pdata['id'])
+        if pdata['primary'] <> '':
+            person_identifiers.append(pdata['primary'])
+        if pdata['first'] <> '' and  pdata['last'] <> '':
+            person_identifiers.append(pdata['first']+" "+pdata['last'])
         person_identifiers = list(set(person_identifiers))
 
         person_affs = pdata['affiliations']
@@ -606,7 +610,6 @@ def create_affiliations_identities(affiliations_file, automator_file):
             person_aff = person_affs[aff]['name']
             person_aff_id = affs_id['id'][affs_id['name'].index(person_aff)]
             if set_identities_aff(person_identifiers, person_aff_id, automator_file):
-                print(person_identifiers)
                 npeople_found += 1
     logging.info("Total number of people %i", npeople)
     logging.info("Total number of people with affiliations %i", npeople_aff)
