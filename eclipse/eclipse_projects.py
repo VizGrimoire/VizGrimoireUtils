@@ -54,6 +54,11 @@ def read_options():
                       dest="tree_html",
                       default=False,
                       help="Create HTML for the projects Tree structure")
+    parser.add_option("--template",
+                      action="store",
+                      dest="template_html",
+                      default=None,
+                      help="HTML template file to be used together with --html")
     parser.add_option("-s", "--scm",
                       action="store_true",
                       dest="scm",
@@ -242,19 +247,20 @@ def show_fields(project):
         print(key)
 
 # We build the tree from leaves to roots
-def show_projects_tree(projects, html = False):
+def show_projects_tree(projects, html = False, template_file = None):
 
     tree = ""
     eclipse_projects_url = "https://projects.eclipse.org/projects"
 
-    if (html):
-        tree ="<html><head>\n"
-        tree += "<style>\n"
-        tree += "li a {text-decoration:none;}\n"
-        tree += "li a:hover {color: #fff;background-color: #369;}\n"
-        tree += "</style>\n"
-        tree += "</head><body>\n"
+    def compose_n_ws(number):
+        output = ""
+        for i in range(0,number):
+            output += "&nbsp;&nbsp;"
+        return output
 
+    def get_title(project_name):
+        return projects[project_name]['title']
+    
     def find_children(project):
         children =[]
         for key in projects:
@@ -264,43 +270,77 @@ def show_projects_tree(projects, html = False):
                     children.append(key)
         return children
 
+    def apply_template(tree, template_file):
+        fd = open(template_file, 'r')
+        content = fd.read()
+        fd.close()
+        return content.replace("STRING_TO_BE_REPLACED", tree)
+    
     def show_tree(project, level, projects_url):
         tree = ""
         children = find_children(project)
-        if len(children) == 0: return tree
-        if html: tree +="<ul>\n"
+        if len(children) == 0: return (0,tree)
+        
+        if html:
+                id_name = project.replace('.','_') + str(level)
+                collapse_html_h = '<div id="collapse%s" class="panel-collapse collapse">' % (id_name)
+                tree += collapse_html_h
+                tree += "<ul>\n"
         level += 1
         for child in children:
             level_str = ""
+            collapse_html = ""
             if (html):
-                child_url = "<a href='project.html?project=%s'>%s</a>" % (child, child)
-                upstream_url = "<a href='%s/%s'>(+)</a>" % (projects_url, child)
+                id_name = child.replace('.','_') + str(level)                
+                child_url = "<a href='project.html?project=%s'>%s</a>" % (child, get_title(child))
+
                 for i in range(0, level): level_str += " "
-                tree += level_str + "<li>%s %s\n" % (child_url, upstream_url)
+                tree += level_str + "<li>%s %s\n" % (compose_n_ws(level),child_url)
             else:
                 for i in range(0, level): level_str += "-"
                 tree += level_str + " " + child + "\n"
-            tree += show_tree(child, level, projects_url)
+                
+            aux = show_tree(child, level, projects_url)
+            nchildren = aux[0]
+            childs_tree = aux[1]            
+            if len(childs_tree) > 0:
+                if html:
+                    collapse_html = '<a data-toggle="collapse" data-parent="#accordion" href="#collapse%s">&nbsp;&nbsp;<span class="label">%s subprojects</span> </a>' % (id_name, str(nchildren))
+                    tree += collapse_html                    
+                    tree += childs_tree
+            else:
+                tree += childs_tree
             if (html): tree += "</li>\n"
-        if html: tree +="</ul>\n"
-        return tree
+        if html: tree +="</ul></div>\n"
+        return (len(children), tree)
 
     # First detect roots, the build children recursively
     level = 0 # initial level
     for key in projects:
         data = projects[key]
-        project_url = "<a href='project.html?project=%s'>%s</a>" % (key, key)
-        upstream_url = "<a href='%s/%s'>(+)</a>" % (eclipse_projects_url, key)
+        title = data['title']
 
         if (len(data['parent_project']) == 0):
-            if html: tree +="<ul><li>%s %s\n" % (project_url,upstream_url)
-            else: tree += key+"\n"
-            tree += show_tree(key, level, eclipse_projects_url)
+            collapse_html = ""
+            if html:
+                project_url = "<a href='project.html?project=%s'>%s</a>" % (key, title)
+                tree +="<ul><li>%s\n" % (project_url)
+            else:
+                tree += key+"\n"
+            #end if
+            aux = show_tree(key, level, eclipse_projects_url)
+            childs_tree = aux[1]
+            nchildren = aux[0]
+            if ( len(childs_tree) > 0 and html):
+                collapse_html = '<a data-toggle="collapse" data-parent="#accordion" href="#collapse%s">&nbsp;&nbsp;<span class="label">%s subprojects</span></a>' % (key+str(level),nchildren)
+                tree += collapse_html
+            tree += childs_tree
             if html: tree +="</li></ul>\n"
 
-    if (html): tree +="</body></html>"
-
-    print tree
+    if (html and template_file):
+        print(apply_template(tree, template_file))
+    else:
+        print tree
 
 def show_projects(projects):
     total_projects = 0
@@ -699,7 +739,7 @@ if __name__ == '__main__':
     projects = projects['projects']
 
     if opts.tree:
-        show_projects_tree(projects, opts.tree_html)
+        show_projects_tree(projects, opts.tree_html, opts.template_html)
     elif opts.scm:
         show_repos_scm_list(projects)
     elif opts.its:
