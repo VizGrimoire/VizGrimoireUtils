@@ -95,7 +95,8 @@ def getOptions():
 
     return opts
 
-def anonymize_field (cursor, table, field):
+def anonymize_field (db, table, field):
+    cursor = db.cursor()
     logging.info('Anonymazing %s from %s' % (field, table))
     q = "SELECT DISTINCT(%s) from %s" % (field, table)
     anon_list = execute_query(cursor, q)
@@ -106,6 +107,7 @@ def anonymize_field (cursor, table, field):
         anon_data = hashlib.md5(data).hexdigest()
         q = "UPDATE %s SET %s = '%s' WHERE %s = '%s'" % (table, field, anon_data, field, data)
         cursor.execute(q)
+        db.commit()
         done += 1
 
 def main():
@@ -113,8 +115,7 @@ def main():
 
     opts = getOptions()
     db = connect(opts)
-    cursor = db.cursor()
-    anonymize_field (cursor, opts.db_table, opts.db_field)
+    anonymize_field (db, opts.db_table, opts.db_field)
 
 if __name__ == '__main__':
     main()
