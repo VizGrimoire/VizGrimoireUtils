@@ -305,7 +305,7 @@ def show_projects_tree(projects, html = False, template_file = None):
             childs_tree = aux[1]            
             if len(childs_tree) > 0:
                 if html:
-                    collapse_html = '<a data-toggle="collapse" data-parent="#accordion" href="#collapse%s">&nbsp;&nbsp;<span class="label">%s subprojects</span> </a>' % (id_name, str(nchildren))
+                    collapse_html = '<a data-toggle="collapse" data-parent="#accordion" href="#collapse%s"><span class="label">%s subprojects</span> </a>' % (id_name, str(nchildren))
                     tree += collapse_html                    
                     tree += childs_tree
             else:
@@ -332,7 +332,7 @@ def show_projects_tree(projects, html = False, template_file = None):
             childs_tree = aux[1]
             nchildren = aux[0]
             if ( len(childs_tree) > 0 and html):
-                collapse_html = '<a data-toggle="collapse" data-parent="#accordion" href="#collapse%s">&nbsp;&nbsp;<span class="label">%s subprojects</span></a>' % (key+str(level),nchildren)
+                collapse_html = '<a data-toggle="collapse" data-parent="#accordion" href="#collapse%s"><span class="label">%s subprojects</span></a>' % (key+str(level),nchildren)
                 tree += collapse_html
             tree += childs_tree
             if html: tree +="</li></ul>\n"
