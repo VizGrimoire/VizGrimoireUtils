@@ -522,6 +522,7 @@ def get_affiliations_db_data(automator_file):
 # From GrimoireSQL
 def execute_query (cursor, sql):
     result = {}
+    cursor.execute("SET NAMES utf8")
     cursor.execute(sql)
     rows = cursor.rowcount
     columns = cursor.description
@@ -548,6 +549,7 @@ def get_db_cursor_identities(automator_file):
         passwd = parser.get('generic','db_password')
         db = parser.get('generic','db_identities')
 
+        # db = MySQLdb.connect(user = user, passwd = passwd, db = db, charset="utf8", use_unicode=True)
         db = MySQLdb.connect(user = user, passwd = passwd, db = db)
         _cursor_identities = db.cursor()
 
@@ -608,7 +610,9 @@ def create_affiliations_identities(affiliations_file, automator_file):
         person_affs = pdata['affiliations']
         for aff in person_affs:
             person_aff = person_affs[aff]['name']
-            person_aff_id = affs_id['id'][affs_id['name'].index(person_aff)]
+            # Avoid probs with utf8 enconding. Missing some mappings.
+            if person_aff in affs_id['name']:
+                person_aff_id = affs_id['id'][affs_id['name'].index(person_aff)]
             if set_identities_aff(person_identifiers, person_aff_id, automator_file):
                 npeople_found += 1
     logging.info("Total number of people %i", npeople)
