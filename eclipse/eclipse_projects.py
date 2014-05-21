@@ -254,17 +254,17 @@ def show_fields(project):
 
 def show_projects_hierarchy(projects):
     """Dumps JSON data with hierarchy information"""
-    res = []
+    res = {}
     for key in projects:
         aux ={}
         data = projects[key]
-        aux["id"]= key
+        #aux["id"]= key
         aux["title"] = data['title']
         if (len(data['parent_project']) == 0):
             aux["parent_project"] = None
         else:
             aux["parent_project"] = data['parent_project'][0]['id']
-        res.append(aux)
+        res[key] = aux
     print json.dumps(res)
 
 
