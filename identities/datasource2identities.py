@@ -159,8 +159,8 @@ def process_identity(cursor_ids, cursor_ds, people_id, field, field_type):
     results_ids = search_identity(cursor_ids, field)
     if len(results_ids) > 0:
         upeople_id = int(results_ids[0][0])
-        print ("Reusing identity by " + field_type + " "
-               + field).encode('utf-8')
+        #print ("Reusing identity by " + field_type + " "
+        #       + field).encode('utf-8')
         reuse_identity(cursor_ds, people_id, upeople_id)
         reusedids += 1
     else:
@@ -188,7 +188,7 @@ def main():
     elif (data_source == "mediawiki"):
         query = "SELECT DISTINCT(user) FROM wiki_pages_revs"
     elif (data_source == "releases"):
-        query = "SELECT DISTINCT(username) FROM users"
+        query = "SELECT id, username FROM users"
     else:
         print ("Data source " + data_source + " not supported.")
         return
@@ -197,9 +197,13 @@ def main():
     print ("Total identities to analyze: " + str(total))
 
     for result in results:
-        if data_source in ['irc','mediawiki','releases']:
+        if data_source in ['irc','mediawiki']:
             name = result[0]
             people_id = name
+            email = user_id = None
+        elif data_source == 'releases':
+            people_id = int(result[0])
+            name = result[1]
             email = user_id = None
         elif (data_source == "mls"):
             name = result[0]
