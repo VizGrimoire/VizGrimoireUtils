@@ -44,7 +44,7 @@ def getOptions():
                                       'for VizGrimoire Data Sources',
                           version='0.1')
     parser.add_option('--data-source', dest='data_source',
-                      help='Data Source to be used (its, mls, irc, mediawiki)',
+                      help='Data Source to be used (its, mls, irc, mediawiki, releases)',
                       default=None)
     parser.add_option('--db-name-ds', dest='db_name_ds',
                       help='Data source database name', default=None)
@@ -187,6 +187,8 @@ def main():
         query = "SELECT DISTINCT(nick) FROM irclog"
     elif (data_source == "mediawiki"):
         query = "SELECT DISTINCT(user) FROM wiki_pages_revs"
+    elif (data_source == "releases"):
+        query = "SELECT DISTINCT(username) FROM users"
     else:
         print ("Data source " + data_source + " not supported.")
         return
@@ -195,7 +197,7 @@ def main():
     print ("Total identities to analyze: " + str(total))
 
     for result in results:
-        if (data_source == "irc" or data_source == "mediawiki"):
+        if data_source in ['irc','mediawiki','releases']:
             name = result[0]
             people_id = name
             email = user_id = None
