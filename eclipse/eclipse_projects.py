@@ -54,6 +54,11 @@ def read_options():
                       dest="tree_html",
                       default=False,
                       help="Create HTML for the projects Tree structure")
+    parser.add_option("--hierarchy",
+                      action="store_true",
+                      dest="json_hierarchy",
+                      default=False,
+                      help="Create JSON for the hierarchy")
     parser.add_option("--template",
                       action="store",
                       dest="template_html",
@@ -246,6 +251,23 @@ def show_fields(project):
     for key in project:
         print(key)
 
+
+def show_projects_hierarchy(projects):
+    """Dumps JSON data with hierarchy information"""
+    res = {}
+    for key in projects:
+        aux ={}
+        data = projects[key]
+        #aux["id"]= key
+        aux["title"] = data['title']
+        if (len(data['parent_project']) == 0):
+            aux["parent_project"] = None
+        else:
+            aux["parent_project"] = data['parent_project'][0]['id']
+        res[key] = aux
+    print json.dumps(res)
+
+
 # We build the tree from leaves to roots
 def show_projects_tree(projects, html = False, template_file = None):
 
@@ -305,7 +327,7 @@ def show_projects_tree(projects, html = False, template_file = None):
             childs_tree = aux[1]            
             if len(childs_tree) > 0:
                 if html:
-                    collapse_html = '<a data-toggle="collapse" data-parent="#accordion" href="#collapse%s">&nbsp;&nbsp;<span class="label">%s subprojects</span> </a>' % (id_name, str(nchildren))
+                    collapse_html = '<a data-toggle="collapse" data-parent="#accordion" href="#collapse%s"><span class="label">%s subprojects</span> </a>' % (id_name, str(nchildren))
                     tree += collapse_html                    
                     tree += childs_tree
             else:
@@ -332,7 +354,7 @@ def show_projects_tree(projects, html = False, template_file = None):
             childs_tree = aux[1]
             nchildren = aux[0]
             if ( len(childs_tree) > 0 and html):
-                collapse_html = '<a data-toggle="collapse" data-parent="#accordion" href="#collapse%s">&nbsp;&nbsp;<span class="label">%s subprojects</span></a>' % (key+str(level),nchildren)
+                collapse_html = '<a data-toggle="collapse" data-parent="#accordion" href="#collapse%s"><span class="label">%s subprojects</span></a>' % (key+str(level),nchildren)
                 tree += collapse_html
             tree += childs_tree
             if html: tree +="</li></ul>\n"
@@ -562,6 +584,7 @@ def get_affiliations_db_data(automator_file):
 # From GrimoireSQL
 def execute_query (cursor, sql):
     result = {}
+    cursor.execute("SET NAMES utf8")
     cursor.execute(sql)
     rows = cursor.rowcount
     columns = cursor.description
@@ -588,6 +611,7 @@ def get_db_cursor_identities(automator_file):
         passwd = parser.get('generic','db_password')
         db = parser.get('generic','db_identities')
 
+        # db = MySQLdb.connect(user = user, passwd = passwd, db = db, charset="utf8", use_unicode=True)
         db = MySQLdb.connect(user = user, passwd = passwd, db = db)
         _cursor_identities = db.cursor()
 
@@ -648,7 +672,9 @@ def create_affiliations_identities(affiliations_file, automator_file):
         person_affs = pdata['affiliations']
         for aff in person_affs:
             person_aff = person_affs[aff]['name']
-            person_aff_id = affs_id['id'][affs_id['name'].index(person_aff)]
+            # Avoid probs with utf8 enconding. Missing some mappings.
+            if person_aff in affs_id['name']:
+                person_aff_id = affs_id['id'][affs_id['name'].index(person_aff)]
             if set_identities_aff(person_identifiers, person_aff_id, automator_file):
                 npeople_found += 1
     logging.info("Total number of people %i", npeople)
@@ -740,6 +766,8 @@ if __name__ == '__main__':
 
     if opts.tree:
         show_projects_tree(projects, opts.tree_html, opts.template_html)
+    elif opts.json_hierarchy:
+        show_projects_hierarchy(projects)
     elif opts.scm:
         show_repos_scm_list(projects)
     elif opts.its:
