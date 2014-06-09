@@ -2,75 +2,77 @@ FORMAT: 1A
 HOST: http://demo.bitergia.com
 
 # vizGrimoire API
-API for accessing vizGrimoire variables and other data about a software
+
+API for accessing Grimoire entities and other data about a software
 development project, or a collection of those.
 
 Main abstractions of the API:
 
-* **Variable**: Abstract item, that will have a unique name, and will
+* **Entity**: Abstract item, that will have a unique name, and will
 represent some property or measurement of the analyzed project,
-with some specific semantics. A variable can be an specific
+with some specific semantics. An entity can be an specific
 measurement (such as number of commits), but also other kinds of data
 (such as developer name) or a structured combination of specific
 measurements or other kinds of data (such as a time series of the
 number of commits per month, or a list of developers).
-* **Condition**. Qualifier that determine the context of a value for a
-variable. For example, the variable "number of commits" can be
+* **Condition**. Qualifier that determine the context of an entity to
+obtain a value. For example, the entity "number of commits" can be
 qualified with the conditions "scope: all the project", "period:
-from 2012-01-01 to 2012-12-31". Values are always of a variable
+from 2012-01-01 to 2012-12-31". Values are always of an entity
 qualified by a set of conditions.
-* **Value**. The specific value of a variable under speciic conditions.
+* **Value**. The specific value of an entity under speciic conditions.
 For example, the number of commits of the OpenStack project for all
 its life previous to 2014-01-08; the time series of the number of
 commits per month for the months of Jan, Feb and March 2013 for
 subproject XXX, or the list of the top ten developers with most
 commits.
-* **Family**. Mainly (collection) of variables that have some semantic
+* **Family**. Mainly (collection) of entities that have some semantic
 relationship, usually coming from the same or similar tables in the
-database. For example, variables directly related to the source code
+database. For example, entities directly related to the source code
 management system (SCM family), to the issue tracking system (ITS family),
 or maybe to the demography studies (Demos family).
-* **Set**. Set of variables that can be found together in the same
+* **Set**. Set of entities that can be found together in the same
 JSON document. They are defined for convenience, to avoid having to
 specify in a single GET request a potentially large collection of
 variables. This would be much more convenient for the static API,
 for which in fact metrics are already grouped in JSON documents.
 
-# Group Variables
-Variables (and values for them) are provided as resources. In this
+# Families of entities
+
+Entities (and values for them) are provided as resources. In this
 hierarchy, each leaf resource corresponds to a variable offered by
-the API, and its value. Variables are structured in families, which
-act as collections of variables. Each family, such as /vars/scm,
-is a collection providing links to the available variables of that
-family. Each variable, such as /vars/scm/commits provides
-information about that variable, and the value of that variable.
+the API, and its value. Entities are structured in families, which
+act as collections of entities. Each family, such as /ent/scm,
+is a collection providing links to the available entities of that
+family. Each entity, such as /ent/scm/commits provides
+information about that entity, and the value of that entity.
 
-## Collection of families of variables [/var]
-### List of all families of variables [GET]
+## Collection of families of entities [/ents]
+### List of all families of entities [GET]
 
-Root of the hierarchy, acts as a collection of families of variables,
-providing links to all families of variables with available values.
+Root of the hierarchy, acts as a collection of families of entities,
+providing links to all families with available values.
 
 + Response 200 (application/json)
 
     + Body
     
             {"items": [
-                {"href": "/var/scm"},
-                {"href": "/var/its"},
-                {"href": "/var/mls"},
-                {"href": "/var/wiki"},
-                {"href": "/var/irc"}
+                {"href": "/ent/scm"},
+                {"href": "/ent/its"},
+                {"href": "/ent/mls"},
+                {"href": "/ent/wiki"},
+                {"href": "/ent/irc"}
                 ],
-            "desc": "List of families of variables"
+            "desc": "List of families of entities"
             }
 
-## Variables family [/var/{fam}]
-Collection of variables in a family
+## Entities family [/ent/{fam}]
+Collection of entities in a family
 
 + Parameters
 
-    + fam (required, string, `scm`) ... Name of variables family.
+    + fam (required, string, `scm`) ... Name of entities family.
 
         + Values
             + `scm`
@@ -79,53 +81,53 @@ Collection of variables in a family
             + `wiki`
             + `irc`
 
-### List all variables in the family [GET]
+### List all entities in the family [GET]
 
 + Response 200 (application/json)
 
     + Body
 
             {"items": [
-                {"href": "/var/scm/commits"},
-                {"href": "/var/scm/authors"},
-                {"href": "/var/scm/ts_commits"},
-                {"href": "/var/scm/list_authors"}
+                {"href": "/ent/scm/commits"},
+                {"href": "/ent/scm/authors"},
+                {"href": "/ent/scm/ts_commits"},
+                {"href": "/ent/scm/list_authors"}
                 ]
-            "desc": "List of variables for the source code management family"
+            "desc": "List of entities for the source code management family"
             }
 
-## SCM variables family [/var/scm]
-Collection of variables in the SCM family
+## SCM entities family [/ent/scm]
+Collection of entities in the SCM family
 
-### List all variables in the SCM family [GET]
+### List all entities in the SCM family [GET]
 
 + Response 200 (application/json)
 
     + Body
 
             {"items": [
-                {"href": "/var/scm/commits"},
-                {"href": "/var/scm/ncommits"},
-                {"href": "/var/scm/tscommits"},
-                {"href": "/var/scm/authors"},
-                {"href": "/var/scm/nauthors"},
-                {"href": "/var/scm/tsauthors"},
-                {"href": "/var/scm/committers"},
-                {"href": "/var/scm/ncommitters"},
-                {"href": "/var/scm/tscommitters"},
-                {"href": "/var/scm/branches"},
-                {"href": "/var/scm/nbranches"},
-                {"href": "/var/scm/tsbranches"},
-                {"href": "/var/scm/nlines_add"},
-                {"href": "/var/scm/tslines_add"},
-                {"href": "/var/scm/nlines_rm"},
-                {"href": "/var/scm/tslines_rm"},
-                {"href": "/var/scm/nfiles"},
-                {"href": "/var/scm/tsfiles"},
-                {"href": "/var/scm/nrepos"},
-                {"href": "/var/scm/tsrepos"}
+                {"href": "/ent/scm/commits"},
+                {"href": "/ent/scm/ncommits"},
+                {"href": "/ent/scm/tscommits"},
+                {"href": "/ent/scm/authors"},
+                {"href": "/ent/scm/nauthors"},
+                {"href": "/ent/scm/tsauthors"},
+                {"href": "/ent/scm/committers"},
+                {"href": "/ent/scm/ncommitters"},
+                {"href": "/ent/scm/tscommitters"},
+                {"href": "/ent/scm/branches"},
+                {"href": "/ent/scm/nbranches"},
+                {"href": "/ent/scm/tsbranches"},
+                {"href": "/ent/scm/nlines_add"},
+                {"href": "/ent/scm/tslines_add"},
+                {"href": "/ent/scm/nlines_rm"},
+                {"href": "/ent/scm/tslines_rm"},
+                {"href": "/ent/scm/nfiles"},
+                {"href": "/ent/scm/tsfiles"},
+                {"href": "/ent/scm/nrepos"},
+                {"href": "/ent/scm/tsrepos"}
                 ]
-            "desc": "List of variables for the source code management family"
+            "desc": "List of entities for the source code management family"
             }
 
 ## Variable [/var/{fam}/{variable}]
