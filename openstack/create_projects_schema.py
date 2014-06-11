@@ -157,11 +157,13 @@ def insert_program(program, program_name, cursor):
         mission = program["mission"]
     projects = program["projects"]
 
+    # Insert program info
     query = """
             insert into projects (id, title, ptl, url, mission)
             values ('%s', '%s', '%s', '%s', '%s')
             """ % (identifier, title, ptl, url, mission)
-    cursor.execute(query)    
+    cursor.execute(query)
+
      
 def associated_projects(programs, programs_list):
 
@@ -208,6 +210,57 @@ def insert_releases_programs(releases_programs, programs_list, cursor):
 
         count = count + 1
 
+def linked_repos(repo, cursor, dbgerrit, dbbicho):
+    # This function looks for repositories similar to the repos variable
+    repositories = {}
+
+    # CVSAnalY db
+    query = "select uri from repositories where uri like '%"+repo+"' or uri like '%"+repo+".git'"
+    result = execute_query(cursor, query)
+    repositories["scm"] = result["uri"]
+    
+    # Gerrit db
+    query = "select url from "+dbgerrit+".trackers where url like '%"+repo+"'"
+    result = execute_query(cursor, query)
+    repositories["gerrit"] = result["url"]
+
+    # Bicho db
+    tracker = repo.split("/")[1]
+    query = "select url from "+dbbicho+".trackers where url like '%/"+tracker+"'"
+    result = execute_query(cursor, query)
+    repositories["its"] = result["url"]
+    
+    return repositories
+
+
+def insert_projects_per_program(programs, programs_list, cursor, dbgerrit, dbbicho):
+    # For each program, there is a list of projects that
+    # is inserted in the project_repositories table.
+    # Each project entry may have a repository at least
+    # in the scm, gerrit and bicho databases.
+
+    for program in programs:
+        projects = programs[program]["projects"]
+        for project in projects:
+            # this repo contains info structured such as
+            # [openstack|openstack-infra]/project
+            repo = project["repo"]
+            repositories = linked_repos(repo, cursor, dbgerrit, dbbicho)
+            for repository in repositories:
+                project_id = programs_list.index(program) + 1
+                data_source = repository
+                if repositories[repository] <> []:
+                    url = repositories[repository]
+                    url = "'"+url+"'"
+                else:
+                    continue #this insert shouldn't happen
+                query = """
+                        insert into project_repositories(project_id, data_source, repository_name)
+                        values(%s, '%s', %s)
+                        """ % (project_id, data_source, url)
+                cursor.execute(query) 
+            
+
 if __name__ == '__main__':
     # Parse command line options
     opts = read_options()
@@ -235,4 +288,7 @@ if __name__ == '__main__':
     # contains a list of subprojects (that contains repositories)
     releases_programs = associated_projects(programs, programs_list)
     insert_releases_programs(releases_programs, programs_list, db_cursor)
+
+    # And finally, insert projects per program
+    insert_projects_per_program(programs, programs_list, db_cursor, opts.dbgerrit, opts.dbbicho)
 
