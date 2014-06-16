@@ -163,7 +163,12 @@ def get_mls_repos(project):
     info = project['dev_list']
     if not isinstance(info, list): # if list, no data
         if info['url'] is not None:
-            repos_list.append(info['url'])
+            url = info['url']
+            # Change URL because local analysis
+            # https://dev.eclipse.org/mailman/listinfo/emft-dev is
+            # /mnt/mailman_archives/emft-dev.mbox
+            local_url = "/mnt/mailman_archives/"+url.split("listinfo/")[1]+".mbox"
+            repos_list.append(local_url)
     return repos_list
 
 def get_irc_repos(project):
