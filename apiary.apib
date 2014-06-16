@@ -1,76 +1,78 @@
 FORMAT: 1A
 HOST: http://demo.bitergia.com
 
-# vizGrimoire API
-API for accessing vizGrimoire variables and other data about a software
+# Grimoire API
+
+API for accessing Grimoire entities and other data about a software
 development project, or a collection of those.
 
 Main abstractions of the API:
 
-* **Variable**: Abstract item, that will have a unique name, and will
+* **Entity**: Abstract item, that will have a unique name, and will
 represent some property or measurement of the analyzed project,
-with some specific semantics. A variable can be an specific
+with some specific semantics. An entity can be an specific
 measurement (such as number of commits), but also other kinds of data
 (such as developer name) or a structured combination of specific
 measurements or other kinds of data (such as a time series of the
 number of commits per month, or a list of developers).
-* **Condition**. Qualifier that determine the context of a value for a
-variable. For example, the variable "number of commits" can be
+* **Condition**. Qualifier that determine the context of an entity to
+obtain a value. For example, the entity "number of commits" can be
 qualified with the conditions "scope: all the project", "period:
-from 2012-01-01 to 2012-12-31". Values are always of a variable
+from 2012-01-01 to 2012-12-31". Values are always of an entity
 qualified by a set of conditions.
-* **Value**. The specific value of a variable under speciic conditions.
+* **Value**. The specific value of an entity under speciic conditions.
 For example, the number of commits of the OpenStack project for all
 its life previous to 2014-01-08; the time series of the number of
 commits per month for the months of Jan, Feb and March 2013 for
 subproject XXX, or the list of the top ten developers with most
 commits.
-* **Family**. Mainly (collection) of variables that have some semantic
+* **Family**. Mainly (collection) of entities that have some semantic
 relationship, usually coming from the same or similar tables in the
-database. For example, variables directly related to the source code
+database. For example, entities directly related to the source code
 management system (SCM family), to the issue tracking system (ITS family),
 or maybe to the demography studies (Demos family).
-* **Set**. Set of variables that can be found together in the same
+* **Set**. Set of entities that can be found together in the same
 JSON document. They are defined for convenience, to avoid having to
 specify in a single GET request a potentially large collection of
-variables. This would be much more convenient for the static API,
+entities. This would be much more convenient for the static API,
 for which in fact metrics are already grouped in JSON documents.
 
-# Group Variables
-Variables (and values for them) are provided as resources. In this
-hierarchy, each leaf resource corresponds to a variable offered by
-the API, and its value. Variables are structured in families, which
-act as collections of variables. Each family, such as /vars/scm,
-is a collection providing links to the available variables of that
-family. Each variable, such as /vars/scm/commits provides
-information about that variable, and the value of that variable.
+# Group Entities
 
-## Collection of families of variables [/var]
-### List of all families of variables [GET]
+Entities (and values for them) are provided as resources. In this
+hierarchy, each leaf resource corresponds to an entity offered by
+the API, and its value. Entities are structured in families, which
+act as collections of entities. Each family, such as /ent/scm,
+is a collection providing links to the available entities of that
+family. Each entity, such as /ent/scm/commits provides
+information about that entity, and the value of that entity.
 
-Root of the hierarchy, acts as a collection of families of variables,
-providing links to all families of variables with available values.
+## Collection of families of entities [/ents]
+### List of all families of entities [GET]
+
+Root of the hierarchy, acts as a collection of families of entities,
+providing links to all families with available values.
 
 + Response 200 (application/json)
 
     + Body
     
             {"items": [
-                {"href": "/var/scm"},
-                {"href": "/var/its"},
-                {"href": "/var/mls"},
-                {"href": "/var/wiki"},
-                {"href": "/var/irc"}
+                {"href": "/ent/scm"},
+                {"href": "/ent/its"},
+                {"href": "/ent/mls"},
+                {"href": "/ent/wiki"},
+                {"href": "/ent/irc"}
                 ],
-            "desc": "List of families of variables"
+            "desc": "List of families of entities"
             }
 
-## Variables family [/var/{fam}]
-Collection of variables in a family
+## Entities family [/ent/{fam}]
+Collection of entities in a family
 
 + Parameters
 
-    + fam (required, string, `scm`) ... Name of variables family.
+    + fam (required, string, `scm`) ... Name of entities family.
 
         + Values
             + `scm`
@@ -79,63 +81,63 @@ Collection of variables in a family
             + `wiki`
             + `irc`
 
-### List all variables in the family [GET]
+### List all entities in the family [GET]
 
 + Response 200 (application/json)
 
     + Body
 
             {"items": [
-                {"href": "/var/scm/commits"},
-                {"href": "/var/scm/authors"},
-                {"href": "/var/scm/ts_commits"},
-                {"href": "/var/scm/list_authors"}
+                {"href": "/ent/scm/commits"},
+                {"href": "/ent/scm/authors"},
+                {"href": "/ent/scm/ts_commits"},
+                {"href": "/ent/scm/list_authors"}
                 ]
-            "desc": "List of variables for the source code management family"
+            "desc": "List of entities for the source code management family"
             }
 
-## SCM variables family [/var/scm]
-Collection of variables in the SCM family
+## SCM entities family [/ent/scm]
+Collection of entities in the SCM family
 
-### List all variables in the SCM family [GET]
+### List all entities in the SCM family [GET]
 
 + Response 200 (application/json)
 
     + Body
 
             {"items": [
-                {"href": "/var/scm/commits"},
-                {"href": "/var/scm/ncommits"},
-                {"href": "/var/scm/tscommits"},
-                {"href": "/var/scm/authors"},
-                {"href": "/var/scm/nauthors"},
-                {"href": "/var/scm/tsauthors"},
-                {"href": "/var/scm/committers"},
-                {"href": "/var/scm/ncommitters"},
-                {"href": "/var/scm/tscommitters"},
-                {"href": "/var/scm/branches"},
-                {"href": "/var/scm/nbranches"},
-                {"href": "/var/scm/tsbranches"},
-                {"href": "/var/scm/nlines_add"},
-                {"href": "/var/scm/tslines_add"},
-                {"href": "/var/scm/nlines_rm"},
-                {"href": "/var/scm/tslines_rm"},
-                {"href": "/var/scm/nfiles"},
-                {"href": "/var/scm/tsfiles"},
-                {"href": "/var/scm/nrepos"},
-                {"href": "/var/scm/tsrepos"}
+                {"href": "/ent/scm/commits"},
+                {"href": "/ent/scm/ncommits"},
+                {"href": "/ent/scm/tscommits"},
+                {"href": "/ent/scm/authors"},
+                {"href": "/ent/scm/nauthors"},
+                {"href": "/ent/scm/tsauthors"},
+                {"href": "/ent/scm/committers"},
+                {"href": "/ent/scm/ncommitters"},
+                {"href": "/ent/scm/tscommitters"},
+                {"href": "/ent/scm/branches"},
+                {"href": "/ent/scm/nbranches"},
+                {"href": "/ent/scm/tsbranches"},
+                {"href": "/ent/scm/nlines_add"},
+                {"href": "/ent/scm/tslines_add"},
+                {"href": "/ent/scm/nlines_rm"},
+                {"href": "/ent/scm/tslines_rm"},
+                {"href": "/ent/scm/nfiles"},
+                {"href": "/ent/scm/tsfiles"},
+                {"href": "/ent/scm/nrepos"},
+                {"href": "/ent/scm/tsrepos"}
                 ]
-            "desc": "List of variables for the source code management family"
+            "desc": "List of entities for the source code management family"
             }
 
-## Variable [/var/{fam}/{variable}]
+## Entity [/ent/{fam}/{entity}]
 + Parameters
-    + fam (required, string, `scm`) ... Name of variables family
-    + variable (required, string, `commits`) ... Name of variable
+    + fam (required, string, `scm`) ... Name of entity family
+    + entity (required, string, `commits`) ... Name of entity
 
-### Values for a given variable [GET]
+### Values for a given entity [GET]
 General structure for all resources providing value and context
-data for a variable. List of actual resources for variables follow
+data for an entity. List of actual resources for entities follow
 below.
 
 + Response 200 (application/json)
@@ -152,7 +154,7 @@ below.
             }
         }
 
-## Number of commits [/var/scm/ncommits]
+## Number of commits [/ent/scm/ncommits]
 ### Number of commits in SCM repos [GET]
 
 + Response 200 (application/json)
@@ -163,7 +165,7 @@ below.
         "value": 2245
         }
 
-## Timeserie of commits [/var/scm/tscommits]
+## Timeserie of commits [/ent/scm/tscommits]
 ### Timeserie of commits in SCM repos [GET]
 
 + Response 200 (application/json)
@@ -180,7 +182,7 @@ below.
             }
         }
 
-## List of commits [/var/scm/commits]
+## List of commits [/ent/scm/commits]
 ### List of commits in SCM repos [GET]
 
 + Response 200 (application/json)
@@ -188,10 +190,10 @@ below.
         {"id": "scm/commits",
          "type": "list of commit",
          "desc": "List of commits in SCM repositories",
-         "value": ["/var/scm/commit/43", "/var/scm/commit/47"]
+         "value": ["/ent/scm/commit/43", "/ent/scm/commit/47"]
         }
 
-## Commit record [/var/scm/commits/{id}]
+## Commit record [/ent/scm/commits/{id}]
 + Parameters
     + id (required, `num`, 45) ... Commit number
 
@@ -209,7 +211,7 @@ below.
          "lines_rem" = 254
         }
 
-## Number of authors [/var/scm/nauthors]
+## Number of authors [/ent/scm/nauthors]
 ### Number of authors in SCM repos [GET]
 
 + Response 200 (application/json)
@@ -220,7 +222,7 @@ below.
          "value": { 207 }
         }
 
-## Number of branches [/var/scm/nbranches]
+## Number of branches [/ent/scm/nbranches]
 ### Number of active branches in SCM repos [GET]
 
 + Response 200 (application/json)
@@ -231,7 +233,7 @@ below.
          "value": { 15 }
         }
         
-## Number of files [/var/scm/nfiles]
+## Number of files [/ent/scm/nfiles]
 ### Number of files changed by commits in SCM repos [GET]
 
 + Response 200 (application/json)
@@ -242,7 +244,7 @@ below.
          "value": { 87 }
         }
         
-## Number of authors [/var/scm/ncommitters]
+## Number of authors [/ent/scm/ncommitters]
 ### Number of authors in SCM repos [GET]
 
 + Response 200 (application/json)
@@ -253,7 +255,7 @@ below.
          "value": { 27 }
         }
         
-## Number of lines added [/var/scm/nlines_add]
+## Number of lines added [/ent/scm/nlines_add]
 ### Number of lines added in SCM repos [GET]
 
 + Response 200 (application/json)
@@ -264,7 +266,7 @@ below.
          "value": { 13446 }
         }
         
-## Number of lines removed [/var/scm/nlines_rm]
+## Number of lines removed [/ent/scm/nlines_rm]
 ### Number of lines removed in SCM repos [GET]
 
 + Response 200 (application/json)
@@ -275,7 +277,7 @@ below.
         "value": { 20355 }
         }
 
-## Number of repositories [/var/scm/nrepos]
+## Number of repositories [/ent/scm/nrepos]
 ### Number of active SCM repos [GET]
 
 + Response 200 (application/json)
@@ -287,10 +289,10 @@ below.
         }
         
 # Group Sets
-Standard sets of variables provided by the  **vizGrimoire API**
+Standard sets of entities provided by the  **Grimoire API**
 
-Each set provides a set of variables, with the corresponding values. Sets
-are useful for asking for (and obtaining) several variables at once.
+Each set provides a set of entities, with the corresponding values. Sets
+are useful for asking for (and obtaining) several entities at once.
 
 Components of a set:
 
@@ -301,18 +303,18 @@ Being templated means that the resource name includes one of more
 strings which is in fact a template to be substituted by its value
 before invocation. Those templates are condition names, such as
 "org" for organizations.
-+ "vars": list of variables, with values.
++ "ents": list of entities, with values.
 
 ## Collection of sets [/sets]
-### List all avaialble sets of variables [GET]
+### List all avaialble sets of entities [GET]
 + Response 200 (application/json)
 
         {"sets": [
             {"id": "scm/basic",
              "href": "/sets/scm/basic",
              "templated": false,
-             "desc": "Basic variables from source code management repositories"
-             "vars": [
+             "desc": "Basic entities from source code management repositories"
+             "ents": [
                 {"id": "scm/ncommits"},
                 {"id": "scm/nauthors"},
                 {"id": "scm/ncommitters"},
@@ -329,8 +331,8 @@ before invocation. Those templates are condition names, such as
                 {"org":
                     {"name": "Organization",
                      "href": "/cond/scope/org"}}
-             "desc": "Basic variables for an organization (eg, a company)"
-             "vars": [
+             "desc": "Basic entities for an organization (eg, a company)"
+             "ents": [
                 {"id": "scm/ncommits"},
                 {"id": "scm/nauthors"},
                 {"id": "scm/ncommitters"},
@@ -343,17 +345,17 @@ before invocation. Those templates are condition names, such as
             ]
         }
 
-## Set providing basic SCM variables [/sets/scm/basic]
-### Basic variables from SCM repositories [GET]
+## Set providing basic SCM entities [/sets/scm/basic]
+### Basic entities from SCM repositories [GET]
 + Response 200 (application/json)
 
         {"id": "scm/basic",
          "templated": false,
-         "desc": "Basic variables from source code management repositories"
-         "vars": [
+         "desc": "Basic entities from source code management repositories"
+         "ents": [
             {"common": true,
              "type": int,
-             "vars": [
+             "ents": [
                 {"id": "scm/ncommits",
                  "desc": "Number of commits in SCM repositories"
                  "value": { 2245 }
@@ -375,7 +377,7 @@ before invocation. Those templates are condition names, such as
                 "last_date": "2014-01-15",
                 "period_id": [`Dec 25 2013`, `Jan 1 2014`, `Jan 8 2014`, `Jan 15 2014`]
                 }
-             "vars": [
+             "ents": [
                 {"id": "scm/ts_commits",
                  "desc": "Time serie of number of commits in SCM repo(s)"
                  "value": {
