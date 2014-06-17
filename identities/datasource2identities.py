@@ -44,7 +44,7 @@ def getOptions():
                                       'for VizGrimoire Data Sources',
                           version='0.1')
     parser.add_option('--data-source', dest='data_source',
-                      help='Data Source to be used (its, mls, irc, mediawiki, releases)',
+                      help='Data Source to be used (its, mls, irc, mediawiki, releases, qaforums)',
                       default=None)
     parser.add_option('--db-name-ds', dest='db_name_ds',
                       help='Data source database name', default=None)
@@ -189,6 +189,8 @@ def main():
         query = "SELECT DISTINCT(user) FROM wiki_pages_revs"
     elif (data_source == "releases"):
         query = "SELECT id, username FROM users"
+    elif (data_source == "qaforums"):
+        query = "SELECT id, username FROM people"
     else:
         print ("Data source " + data_source + " not supported.")
         return
@@ -202,6 +204,10 @@ def main():
             people_id = name
             email = user_id = None
         elif data_source == 'releases':
+            people_id = int(result[0])
+            name = result[1]
+            email = user_id = None
+        elif data_source == "qaforums":
             people_id = int(result[0])
             name = result[1]
             email = user_id = None
