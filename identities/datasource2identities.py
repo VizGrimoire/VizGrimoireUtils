@@ -171,10 +171,18 @@ def process_identity(cursor_ids, cursor_ds, people_id, field, field_type):
 
 def main():
     global reusedids, newids
+
+    supported_data_sources = ["its","scr","mls","irc","mediawiki","releases","qaforums"]
+
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s')
 
     cfg = getOptions()
     data_source = cfg.data_source
+
+    if data_source not in supported_data_sources:
+        logging.info ("Data source " + data_source + " not supported.")
+        return
+
     db_database_ds, cursor_ds = connect(cfg.db_name_ds, cfg)
     db_ids, cursor_ids = connect(cfg.db_name_ids, cfg)
 
@@ -192,7 +200,6 @@ def main():
     elif (data_source == "qaforums"):
         query = "SELECT id, username FROM people"
     else:
-        logging.info ("Data source " + data_source + " not supported.")
         return
     results = execute_query(cursor_ds, query)
     total = len(results)
