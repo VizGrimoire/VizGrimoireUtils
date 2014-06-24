@@ -242,9 +242,9 @@ def update_schema(cursor, db, upeople):
                       from people_upeople);"""
 
     results = execute_query(cursor, query)
-    print results
+    # print results
     for result in results:
-        print result
+        # print result
         # check if the algorithm was able to detect duplicated identities
         # with this set of developers. This is done, checking if the people_id
         # is different from the upeople_id in the tuple upeople

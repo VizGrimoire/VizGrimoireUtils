@@ -32,8 +32,8 @@
 # If not, a new entry in identities table is generated and its associated link
 # to the people_upeople table.
 
-import MySQLdb
-import _mysql_exceptions
+import logging
+import MySQLdb, _mysql_exceptions
 from optparse import OptionParser
 import sys
 
@@ -82,7 +82,7 @@ def connect(db, cfg):
         db = MySQLdb.connect(user=user, passwd=password, db=db, charset='utf8')
         return db, db.cursor()
     except:
-        print("Database connection error")
+        logging.error("Database connection error")
         raise
 
 
@@ -150,16 +150,15 @@ def reuse_identity(cursor_ds, people_id, upeople_id):
     try:
         cursor_ds.execute(query, (people_id, upeople_id))
     except _mysql_exceptions.IntegrityError:
-        print (str(people_id) + " to " + str(upeople_id) +
-               " already exits")
-
+        # logging.info(str(people_id) + " to " + str(upeople_id) + " already exits")
+        pass
 
 def process_identity(cursor_ids, cursor_ds, people_id, field, field_type):
     global reusedids, newids
     results_ids = search_identity(cursor_ids, field)
     if len(results_ids) > 0:
         upeople_id = int(results_ids[0][0])
-        #print ("Reusing identity by " + field_type + " "
+        #logging.info ("Reusing identity by " + field_type + " "
         #       + field).encode('utf-8')
         reuse_identity(cursor_ds, people_id, upeople_id)
         reusedids += 1
@@ -173,8 +172,17 @@ def process_identity(cursor_ids, cursor_ds, people_id, field, field_type):
 def main():
     global reusedids, newids
 
+    supported_data_sources = ["its","scr","mls","irc","mediawiki","releases","qaforums"]
+
+    logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s')
+
     cfg = getOptions()
     data_source = cfg.data_source
+
+    if data_source not in supported_data_sources:
+        logging.info ("Data source " + data_source + " not supported.")
+        return
+
     db_database_ds, cursor_ds = connect(cfg.db_name_ds, cfg)
     db_ids, cursor_ids = connect(cfg.db_name_ids, cfg)
 
@@ -192,11 +200,11 @@ def main():
     elif (data_source == "qaforums"):
         query = "SELECT id, username FROM people"
     else:
-        print ("Data source " + data_source + " not supported.")
         return
     results = execute_query(cursor_ds, query)
     total = len(results)
-    print ("Total identities to analyze: " + str(total))
+    logging.info ("Generating unique identities for " + data_source)
+    logging.info (" Total identities to analyze: " + str(total))
 
     for result in results:
         if data_source in ['irc','mediawiki']:
@@ -246,9 +254,9 @@ def main():
     db_ids.commit()
     db_database_ds.commit()
 
-    print ("Total analyzed: " + str(total))
-    print ("New identities: " + str(newids))
-    print ("Reused identities: " + str(reusedids))
+    logging.info (" Total analyzed: " + str(total))
+    logging.info (" New identities: " + str(newids))
+    logging.info (" Reused identities: " + str(reusedids))
     return
 
 if __name__ == "__main__":
