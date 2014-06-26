@@ -577,6 +577,8 @@ def get_affiliations(committers):
             person_aff = pdata['affiliations'][aff]['name']
             all_affs.append(person_aff)
     all_affs = list(set(all_affs))
+    # affiliation for people without affiliations
+    all_affs.append("individual")
 
     return all_affs
 
@@ -657,7 +659,9 @@ def create_affiliations_identities(affiliations_file, automator_file):
     for person in committers:
         pdata = committers[person]
         npeople += 1
-        if not "affiliations" in pdata: continue
+        if not "affiliations" in pdata: 
+            # no affiliation, put it in individual affiliation
+            pdata["affiliations"] = {"0": {"name": "individual"}}
         npeople_aff += 1
 
         # look for this identifiers in grimoire identities table
