@@ -258,8 +258,9 @@ def update_schema(cursor, db, upeople):
                     execute_query(cursor, query)
                     #To be fixed: this action will probably introduce repeated emails or names
                     #at some point
+                    ident = str(result[1]).replace("'", "\\'")
                     query = "INSERT INTO identities(upeople_id, identity, type) " +\
-                            " values(" + str(person[1]) + ", '" + result[1] + "', 'name')"
+                            " values(" + str(person[1]) + ", '" + ident + "', 'name')"
                     execute_query(cursor, query)
                     query = "INSERT INTO identities(upeople_id, identity, type) " +\
                             " values(" + str(person[1]) + ", '" + result[2] + "', 'email')"
@@ -271,11 +272,12 @@ def update_schema(cursor, db, upeople):
                     query = "insert into people_upeople(people_id, upeople_id) " +\
                             " values(" + str(person[0]) + ", " + str(max_id) + ")"
                     execute_query(cursor, query)
+                    ident = str(result[1]).replace("'", "\\'")
                     query = "insert into upeople(id, identifier) " +\
-                            " values(" + str(max_id) + ", '" + str(result[1]) + "')"
+                            " values(" + str(max_id) + ", '" + ident + "')"
                     execute_query(cursor, query)
                     query = "INSERT INTO identities(upeople_id, identity, type) " +\
-                            " values(" + str(max_id) + ", '" + result[1] + "', 'name')"
+                            " values(" + str(max_id) + ", '" + ident + "', 'name')"
                     execute_query(cursor, query)
                     query = "INSERT INTO identities(upeople_id, identity, type) " +\
                             " values(" + str(max_id) + ", '" + result[2] + "', 'email')"
