@@ -163,7 +163,7 @@ def insert_program(program, program_name, cursor):
     query = """
             insert into projects (id, title, ptl, url, mission)
             values ('%s', '%s', '%s', '%s', '%s')
-            """ % (identifier, title, ptl, url, mission)
+            """ % (title, title, ptl, url, mission)
     cursor.execute(query)
 
      
@@ -307,7 +307,7 @@ def insert_openstack_sw_programs(openstack_sw_list, programs, cursor, dbgerrit, 
     # integrated, incubated, clients and others are proper projects in the
     # projects table.
     insert_project_info("OpenStack Software", [], cursor, dbgerrit, dbbicho)
-    insert_project_info("integrated", integrated, cursor, dbgerrit, dbbicho)
+    insert_project_info("integrated", [], cursor, dbgerrit, dbbicho)
     insert_project_info("incubated", incubated, cursor, dbgerrit, dbbicho)
     insert_project_info("clients", clients, cursor, dbgerrit, dbbicho)
     insert_project_info("others", others, cursor, dbgerrit, dbbicho)
@@ -319,12 +319,18 @@ def insert_openstack_sw_programs(openstack_sw_list, programs, cursor, dbgerrit, 
     insert_relationship("OpenStack Software", "clients", cursor)
     insert_relationship("OpenStack Software", "others", cursor)
 
+    # And finally, integrated projects are projects by themselves
+    for integrated_project in integrated:
+        insert_project_info(integrated_project, [integrated_project], cursor, dbgerrit, dbbicho)
+        insert_relationship("integrated", integrated_project, cursor)
+        
+
 def insert_project(cursor, title):
     # This function returns the associated project_id 
     query = """
-            insert into projects (title)
-            values ('%s')
-            """ % (title)
+            insert into projects (id, title)
+            values ('%s', '%s')
+            """ % (title, title)
     cursor.execute(query)
 
     query = """
