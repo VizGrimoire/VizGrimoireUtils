@@ -1,0 +1,5 @@
+= Execution =
+PYTHONPATH=./:../../GrimoireLib/vizgrimoire/ python create_project_hierarchy.py -a os_cvsanaly -u root -p root
+
+= Output =
+JSON file with project hierarchy
