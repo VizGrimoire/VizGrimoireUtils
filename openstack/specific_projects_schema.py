@@ -98,6 +98,7 @@ def create_projects_schema(cursor):
         CREATE TABLE project_children (
             project_id int(11) NOT NULL,
             subproject_id int(11) NOT NULL,
+            level int(11) NOT NULL,
             UNIQUE (project_id, subproject_id)
         ) ENGINE=MyISAM DEFAULT CHARSET=utf8
     """
@@ -247,7 +248,7 @@ def divide_programs(programs):
         
     return openstack_programs
 
-def insert_relationship(project, subproject, cursor):
+def insert_relationship(project, subproject, level, cursor):
     # This function populates the project_children table
     query = """
             select project_id from projects where title='%s'
@@ -262,9 +263,9 @@ def insert_relationship(project, subproject, cursor):
     subproject_id = result["project_id"]
 
     query = """
-            insert into project_children(project_id, subproject_id)
-            values (%s, %s)
-            """ % (project_id, subproject_id)
+            insert into project_children(project_id, subproject_id, level)
+            values (%s, %s, %s)
+            """ % (project_id, subproject_id, str(level))
     cursor.execute(query)
 
 
@@ -314,23 +315,27 @@ def insert_openstack_sw_programs(openstack_sw_list, programs, cursor, dbgerrit, 
 
     # Adding the relationship between OpenStack Software program and
     # integrated, incubated, clients and others projects.
-    insert_relationship("OpenStack Software", "integrated", cursor)
-    insert_relationship("OpenStack Software", "incubated", cursor)
-    insert_relationship("OpenStack Software", "clients", cursor)
-    insert_relationship("OpenStack Software", "others", cursor)
+    insert_relationship("OpenStack Software", "integrated", 0, cursor)
+    insert_relationship("OpenStack Software", "incubated", 0, cursor)
+    insert_relationship("OpenStack Software", "clients", 0, cursor)
+    insert_relationship("OpenStack Software", "others", 0, cursor)
 
     # And finally, integrated projects are projects by themselves
     for integrated_project in integrated:
         insert_project_info(integrated_project, [integrated_project], cursor, dbgerrit, dbbicho)
-        insert_relationship("integrated", integrated_project, cursor)
+        insert_relationship("integrated", integrated_project, 0, cursor)
+        insert_relationship("OpenStack Software", integrated_project, 1, cursor)
         
 
 def insert_project(cursor, title):
     # This function returns the associated project_id 
+    identifier = title
+    if title.find("/") >= 0:
+        identifier = title.split("/")[1]
     query = """
             insert into projects (id, title)
             values ('%s', '%s')
-            """ % (title, title)
+            """ % (identifier, title)
     cursor.execute(query)
 
     query = """
