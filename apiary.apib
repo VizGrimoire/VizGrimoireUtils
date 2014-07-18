@@ -1,0 +1,400 @@
+FORMAT: 1A
+HOST: http://demo.bitergia.com
+
+# Grimoire API
+
+API for accessing Grimoire entities and other data about a software
+development project, or a collection of those.
+
+Main abstractions of the API:
+
+* **Entity**: Abstract item, that will have a unique name, and will
+represent some property or measurement of the analyzed project,
+with some specific semantics. An entity can be an specific
+measurement (such as number of commits), but also other kinds of data
+(such as developer name) or a structured combination of specific
+measurements or other kinds of data (such as a time series of the
+number of commits per month, or a list of developers).
+* **Condition**. Qualifier that determine the context of an entity to
+obtain a value. For example, the entity "number of commits" can be
+qualified with the conditions "scope: all the project", "period:
+from 2012-01-01 to 2012-12-31". Values are always of an entity
+qualified by a set of conditions.
+* **Value**. The specific value of an entity under speciic conditions.
+For example, the number of commits of the OpenStack project for all
+its life previous to 2014-01-08; the time series of the number of
+commits per month for the months of Jan, Feb and March 2013 for
+subproject XXX, or the list of the top ten developers with most
+commits.
+* **Family**. Mainly (collection) of entities that have some semantic
+relationship, usually coming from the same or similar tables in the
+database. For example, entities directly related to the source code
+management system (SCM family), to the issue tracking system (ITS family),
+or maybe to the demography studies (Demos family).
+* **Set**. Set of entities that can be found together in the same
+JSON document. They are defined for convenience, to avoid having to
+specify in a single GET request a potentially large collection of
+entities. This would be much more convenient for the static API,
+for which in fact metrics are already grouped in JSON documents.
+
+# Group Entities
+
+Entities (and values for them) are provided as resources. In this
+hierarchy, each leaf resource corresponds to an entity offered by
+the API, and its value. Entities are structured in families, which
+act as collections of entities. Each family, such as /ent/scm,
+is a collection providing links to the available entities of that
+family. Each entity, such as /ent/scm/commits provides
+information about that entity, and the value of that entity.
+
+## Collection of families of entities [/ents]
+### List of all families of entities [GET]
+
+Root of the hierarchy, acts as a collection of families of entities,
+providing links to all families with available values.
+
++ Response 200 (application/json)
+
+    + Body
+    
+            {"items": [
+                {"href": "/ent/scm"},
+                {"href": "/ent/its"},
+                {"href": "/ent/mls"},
+                {"href": "/ent/wiki"},
+                {"href": "/ent/irc"}
+                ],
+            "desc": "List of families of entities"
+            }
+
+## Entities family [/ent/{fam}]
+Collection of entities in a family
+
++ Parameters
+
+    + fam (required, string, `scm`) ... Name of entities family.
+
+        + Values
+            + `scm`
+            + `its`
+            + `mls`
+            + `wiki`
+            + `irc`
+
+### List all entities in the family [GET]
+
++ Response 200 (application/json)
+
+    + Body
+
+            {"items": [
+                {"href": "/ent/scm/commits"},
+                {"href": "/ent/scm/authors"},
+                {"href": "/ent/scm/ts_commits"},
+                {"href": "/ent/scm/list_authors"}
+                ]
+            "desc": "List of entities for the source code management family"
+            }
+
+## SCM entities family [/ent/scm]
+Collection of entities in the SCM family
+
+### List all entities in the SCM family [GET]
+
++ Response 200 (application/json)
+
+    + Body
+
+            {"items": [
+                {"href": "/ent/scm/commits"},
+                {"href": "/ent/scm/ncommits"},
+                {"href": "/ent/scm/tscommits"},
+                {"href": "/ent/scm/authors"},
+                {"href": "/ent/scm/nauthors"},
+                {"href": "/ent/scm/tsauthors"},
+                {"href": "/ent/scm/committers"},
+                {"href": "/ent/scm/ncommitters"},
+                {"href": "/ent/scm/tscommitters"},
+                {"href": "/ent/scm/branches"},
+                {"href": "/ent/scm/nbranches"},
+                {"href": "/ent/scm/tsbranches"},
+                {"href": "/ent/scm/nlines_add"},
+                {"href": "/ent/scm/tslines_add"},
+                {"href": "/ent/scm/nlines_rm"},
+                {"href": "/ent/scm/tslines_rm"},
+                {"href": "/ent/scm/nfiles"},
+                {"href": "/ent/scm/tsfiles"},
+                {"href": "/ent/scm/nrepos"},
+                {"href": "/ent/scm/tsrepos"}
+                ]
+            "desc": "List of entities for the source code management family"
+            }
+
+## Entity [/ent/{fam}/{entity}]
++ Parameters
+    + fam (required, string, `scm`) ... Name of entity family
+    + entity (required, string, `commits`) ... Name of entity
+
+### Values for a given entity [GET]
+General structure for all resources providing value and context
+data for an entity. List of actual resources for entities follow
+below.
+
++ Response 200 (application/json)
+
+        {"id": "scm/ts_commits",
+         "type": "ts of commits",
+         "desc": "Time serie of number of commits"
+         "value": {
+            "period": weeks,
+            "first_date": "2013-12-25",
+            "last_date": "2014-01-15",
+            "values": [23, 23, 56, 34],
+            "period_id": ["Dec 25 2013", "Jan 1 2014", "Jan 8 2014", "Jan 15 2014"]
+            }
+        }
+
+## Number of commits [/ent/scm/ncommits]
+### Number of commits in SCM repos [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/ncommits",
+        "type": "int",
+        "desc": "Number of commits in SCM repositories",
+        "value": 2245
+        }
+
+## Timeserie of commits [/ent/scm/tscommits]
+### Timeserie of commits in SCM repos [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/ts_commits",
+         "type": "ts of int",
+         "desc": "Time serie of number of commits in SCM repo(s)",
+         "value": {
+            "period": "weeks",
+            "first_date": "2013-12-25",
+            "last_date": "2014-01-15",
+            "values": [23, 23, 56, 34],
+            "period_id": ["Dec 25 2013", "Jan 1 2014", "Jan 8 2014", "Jan 15 2014"]
+            }
+        }
+
+## List of commits [/ent/scm/commits]
+### List of commits in SCM repos [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/commits",
+         "type": "list of commit",
+         "desc": "List of commits in SCM repositories",
+         "value": ["/ent/scm/commit/43", "/ent/scm/commit/47"]
+        }
+
+## Commit record [/ent/scm/commits/{id}]
++ Parameters
+    + id (required, `num`, 45) ... Commit number
+
+### Information for a commit record in SCM repos [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/commits/45",
+         "scmid" = "fe23243edefdf4fedfeerrere",
+         "author" = 476,
+         "committer" = 45,
+         "date_author" = "2014-01-30T20:03:04",
+         "date_commit" = "2014-02-02T20:03:04",
+         "lines_add" = 345,
+         "lines_rem" = 254
+        }
+
+## Number of authors [/ent/scm/nauthors]
+### Number of authors in SCM repos [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/nauthors",
+         "type": "int",
+         "desc": "Number of authors in SCM repositories"
+         "value": { 207 }
+        }
+
+## Number of branches [/ent/scm/nbranches]
+### Number of active branches in SCM repos [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/nbranches",
+         "type": "int",
+         "desc": "Number of active branches in SCM repositories"
+         "value": { 15 }
+        }
+        
+## Number of files [/ent/scm/nfiles]
+### Number of files changed by commits in SCM repos [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/nfiles",
+         "type": "int",
+         "desc": "Number of files changed by commits in SCM repositories"
+         "value": { 87 }
+        }
+        
+## Number of authors [/ent/scm/ncommitters]
+### Number of authors in SCM repos [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/ncommitters",
+         "type": "int",
+         "desc": "Number of committers in SCM repositories"
+         "value": { 27 }
+        }
+        
+## Number of lines added [/ent/scm/nlines_add]
+### Number of lines added in SCM repos [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/nlines_add",
+         "type": "int",
+         "desc": "Number of lines added in SCM repositories"
+         "value": { 13446 }
+        }
+        
+## Number of lines removed [/ent/scm/nlines_rm]
+### Number of lines removed in SCM repos [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/nlines_rm",
+        "type": "int",
+        "desc": "Number of lines removed in SCM repositories"
+        "value": { 20355 }
+        }
+
+## Number of repositories [/ent/scm/nrepos]
+### Number of active SCM repos [GET]
+
++ Response 200 (application/json)
+
+        {"id": "scm/nrepos",
+         "type": "int",
+         "desc": "Number of active SCM repo(s)"
+         "value": { 20355 }
+        }
+        
+# Group Sets
+Standard sets of entities provided by the  **Grimoire API**
+
+Each set provides a set of entities, with the corresponding values. Sets
+are useful for asking for (and obtaining) several entities at once.
+
+Components of a set:
+
++ "id": unique name, which is the resource name after "/sets/"
++ "desc": description (text describing the set).
++ "templated": boolean describing whether the set name is templated.
+Being templated means that the resource name includes one of more
+strings which is in fact a template to be substituted by its value
+before invocation. Those templates are condition names, such as
+"org" for organizations.
++ "ents": list of entities, with values.
+
+## Collection of sets [/sets]
+### List all avaialble sets of entities [GET]
++ Response 200 (application/json)
+
+        {"sets": [
+            {"id": "scm/basic",
+             "href": "/sets/scm/basic",
+             "templated": false,
+             "desc": "Basic entities from source code management repositories"
+             "ents": [
+                {"id": "scm/ncommits"},
+                {"id": "scm/nauthors"},
+                {"id": "scm/ncommitters"},
+                {"id": "scm/ts_commits"},
+                {"id": "scm/ts_authors"},
+                {"id": "scm/ts_committers"}
+                ]
+            },
+            {
+             "id": "{org/basic/{?org}}",
+             "href": "/sets/org/basic/{?org}",
+             "templated": true,
+             "parameters":
+                {"org":
+                    {"name": "Organization",
+                     "href": "/cond/scope/org"}}
+             "desc": "Basic entities for an organization (eg, a company)"
+             "ents": [
+                {"id": "scm/ncommits"},
+                {"id": "scm/nauthors"},
+                {"id": "scm/ncommitters"},
+                {"id": "scm/ts_commits"},
+                {"id": "scm/ts_authors"},
+                {"id": "scm/ts_committers"}
+                ],
+             "cond": "scope=org/{?org}"
+            }
+            ]
+        }
+
+## Set providing basic SCM entities [/sets/scm/basic]
+### Basic entities from SCM repositories [GET]
++ Response 200 (application/json)
+
+        {"id": "scm/basic",
+         "templated": false,
+         "desc": "Basic entities from source code management repositories"
+         "ents": [
+            {"common": true,
+             "type": int,
+             "ents": [
+                {"id": "scm/ncommits",
+                 "desc": "Number of commits in SCM repositories"
+                 "value": { 2245 }
+                },
+                {"id": "scm/nauthors",
+                 "desc": "Number of authors in SCM repositories"
+                 "value": { 207 }
+                },
+                {"id": "scm/ncommitters",
+                 "desc": "Number of committers in SCM repositories"
+                 "value": { 27 }
+                }]
+            },
+            {"common": true,
+             "type": "ts of int",
+             "value": {
+                "period": weeks,
+                "first_date": "2013-12-25",
+                "last_date": "2014-01-15",
+                "period_id": [`Dec 25 2013`, `Jan 1 2014`, `Jan 8 2014`, `Jan 15 2014`]
+                }
+             "ents": [
+                {"id": "scm/ts_commits",
+                 "desc": "Time serie of number of commits in SCM repo(s)"
+                 "value": {
+                    "values": [23, 23, 56, 34],
+                    }
+                },
+                {"id": "scm/ts_authors",
+                 "desc": "Time serie of number of authors in SCM repo(s)"
+                 "value": {
+                    "values": [12, 9, 11, 13]
+                    }
+                },
+                {"id": "scm/ts_committers"
+                 "desc": "Time serie of number of committers in SCM repo(s)"
+                 "value": {
+                    "values": [10, 7, 6, 10]
+                    }
+                }]
+            }]
+        }
