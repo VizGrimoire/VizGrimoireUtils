@@ -35,7 +35,7 @@
 import logging
 import MySQLdb, _mysql_exceptions
 from optparse import OptionParser
-import sys
+import re, sys
 
 
 def getOptions():
@@ -111,7 +111,7 @@ def create_tables(db, connector):
 
 
 def insert_identity(cursor_ids, upeople_id, field, field_type):
-    if (len(search_identity(cursor_ids, field)) > 0):
+    if (len(search_identity(cursor_ids, field, field_type)) > 0):
         return
     query = "INSERT INTO identities (upeople_id, identity, type)" + \
             "VALUES (%s, %s, %s)"
@@ -135,9 +135,9 @@ def insert_upeople(cursor_ids, cursor_ds, people_id, field, field_type):
     return upeople_id
 
 
-def search_identity(cursor_ids, field):
-    query = "SELECT upeople_id FROM identities WHERE identity = %s"
-    results = int(cursor_ids.execute(query, (field)))
+def search_identity(cursor_ids, field, field_type):
+    query = "SELECT upeople_id FROM identities WHERE identity = %s AND type=%s"
+    results = int(cursor_ids.execute(query, (field, field_type)))
     if results > 0:
         return cursor_ids.fetchall()
     else:
@@ -155,7 +155,14 @@ def reuse_identity(cursor_ds, people_id, upeople_id):
 
 def process_identity(cursor_ids, cursor_ds, people_id, field, field_type):
     global reusedids, newids
-    results_ids = search_identity(cursor_ids, field)
+    results_ids = []
+    if field_type == "name":
+        # For name, at least first and family
+        # \s: any whitespace character \w: any alphanumeric character and the underscore
+        if (re.match(r"\w+\s\w+",field)):
+            results_ids = search_identity(cursor_ids, field, field_type)
+    else:
+        results_ids = search_identity(cursor_ids, field, field_type)
     if len(results_ids) > 0:
         upeople_id = int(results_ids[0][0])
         #logging.info ("Reusing identity by " + field_type + " "
