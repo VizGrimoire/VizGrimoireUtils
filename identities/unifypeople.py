@@ -189,7 +189,7 @@ def create_schema(cursor, db, upeople):
                                   people_upeople pup, 
                                   upeople u 
                              WHERE p.id=pup.people_id and 
-                                   pup.upeople_id=u.id 
+                                   pup.upeople_id=u.id and p.name<>''
                              ORDER by u.id""")
     cursor.execute("""UPDATE identities set type='name'
                       WHERE type is null""")
