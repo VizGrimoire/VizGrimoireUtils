@@ -30,6 +30,9 @@ import logging
 from optparse import OptionParser
 
 class IdentitiesTest(unittest.TestCase):
+
+    supported_data_sources = ["scm","its","scr","mls","irc","mediawiki","releases","qaforums"]
+
     @staticmethod
     def init():
         opts = read_options()
@@ -45,10 +48,8 @@ class IdentitiesTest(unittest.TestCase):
         dbuser = Report.get_config()['generic']['db_user']
         dbpass = Report.get_config()['generic']['db_password']
 
-        supported_data_sources = ["scm","its","scr","mls","irc","mediawiki","releases","qaforums"]
-
         for ds in Report.get_data_sources():
-            if ds.get_name() not in supported_data_sources: continue
+            if ds.get_name() not in IdentitiesTest.supported_data_sources: continue
             ds_dbname = ds.get_db_name()
             dbname = Report.get_config()['generic'][ds_dbname]
             dsquery = ds.get_query_builder()
@@ -66,11 +67,62 @@ class IdentitiesTest(unittest.TestCase):
             self.assertEqual(npeople, nupeople, "Data source: " + ds.get_name() + " " + str(npeople) + " " + str(nupeople))
         self.assertTrue(True)
 
+    def get_db_identities_con(self):
+        db_identities= Report.get_config()['generic']['db_identities']
+        dbuser = Report.get_config()['generic']['db_user']
+        dbpass = Report.get_config()['generic']['db_password']
+        dbconn = None
+        for ds in Report.get_data_sources():
+            if ds.get_name() != "scm": continue
+            dsquery = ds.get_query_builder()
+            dbcon = dsquery(dbuser, dbpass, db_identities, db_identities)
+        return dbcon
+
+
+
     def test_max_identities(self):
-        self.assertTrue(True)
+        dbcon = self.get_db_identities_con()
+        # Check there are no person with more than max_ids
+        max_ids = "15"
+        q = """
+            select count(id) as total, upeople_id 
+            from identities 
+            group by upeople_id 
+            having total>=%s order by total 
+            desc limit 1
+        """ % (max_ids)
+        res = check_array_values(dbcon.ExecuteQuery(q))
+        self.assertEqual(len(res['total']), 0, res)
+
+        # Check there are no more than max_people with max_ids
+        max_ids = "5"
+        max_people = "20"
+        q = """
+            select count(id) as total, upeople_id 
+            from identities 
+            group by upeople_id 
+            having total>=%s order by total 
+            desc limit %s
+        """ % (max_ids, max_people)
+        res = dbcon.ExecuteQuery(q)
+        self.assertTrue(len(res['total'])<int(max_people), 
+                        "More than " +max_people+" person with more than " + max_ids + " identities")
 
     def test_max_emails(self):
-        self.assertTrue(True)
+        dbcon = self.get_db_identities_con()
+        # Check there are no person with more than max_ids
+        max_emails = "10"
+        q = """
+            select count(distinct(identity)) as total_emails, upeople_id 
+            from identities
+            WHERE type = 'email'
+            group by upeople_id
+            having total_emails>=%s 
+            order by total_emails 
+            desc limit 1
+        """ % (max_emails)
+        res = check_array_values(dbcon.ExecuteQuery(q))
+        self.assertEqual(len(res['total_emails']), 0, res)
 
 def read_options():
     parser = OptionParser(usage="usage: %prog [options]",
@@ -110,7 +162,7 @@ if __name__ == '__main__':
 
     init_env()
 
-    from GrimoireUtils import read_main_conf
+    from GrimoireUtils import read_main_conf, check_array_values
     from report import Report
 
     opts = read_options()
