@@ -95,7 +95,7 @@ class IdentitiesTest(unittest.TestCase):
         self.assertEqual(len(res['total']), 0, res)
 
         # Check there are no more than max_people with max_ids
-        max_ids = "5"
+        max_ids = "10"
         max_people = "20"
         q = """
             select count(id) as total, upeople_id 
