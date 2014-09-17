@@ -203,9 +203,9 @@ def main():
     elif (data_source == "mediawiki"):
         query = "SELECT DISTINCT(user) FROM wiki_pages_revs"
     elif (data_source == "releases"):
-        query = "SELECT id, username FROM users"
+        query = "SELECT id, username, email FROM users"
     elif (data_source == "qaforums"):
-        query = "SELECT id, username FROM people"
+        query = "SELECT id, username, email FROM people"
     else:
         return
     results = execute_query(cursor_ds, query)
@@ -218,14 +218,11 @@ def main():
             name = result[0]
             people_id = name
             email = user_id = None
-        elif data_source == 'releases':
+        elif data_source in ['releases', 'qaforums']:
             people_id = int(result[0])
             name = result[1]
-            email = user_id = None
-        elif data_source == "qaforums":
-            people_id = int(result[0])
-            name = result[1]
-            email = user_id = None
+            email = result[2]
+            user_id = result[1]
         elif (data_source == "mls"):
             name = result[0]
             email = result[1]
