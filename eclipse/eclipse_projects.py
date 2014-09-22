@@ -167,7 +167,10 @@ def get_mls_repos(project):
             # Change URL because local analysis
             # https://dev.eclipse.org/mailman/listinfo/emft-dev is
             # /mnt/mailman_archives/emft-dev.mbox
-            local_url = "/mnt/mailman_archives/"+url.split("listinfo/")[1]+".mbox"
+            # local_url = "/mnt/mailman_archives/"+url.split("listinfo/")[1]+".mbox"
+            # New format: /mnt/mailman_archives/emft-dev.mbox/emft-dev.mbox
+            name = url.split("listinfo/")[1]
+            local_url = "/mnt/mailman_archives/"+name+".mbox/"+name+".mbox"
             repos_list.append(local_url)
     return repos_list
 
