@@ -35,7 +35,7 @@
 import logging
 import MySQLdb, _mysql_exceptions
 from optparse import OptionParser
-import re, sys
+import re
 
 
 def getOptions():
@@ -111,14 +111,17 @@ def create_tables(db, connector):
 
 
 def insert_identity(cursor_ids, upeople_id, field, field_type):
-    if (len(search_identity(cursor_ids, field, field_type)) > 0):
-        return
-    query = "INSERT INTO identities (upeople_id, identity, type)" + \
-            "VALUES (%s, %s, %s)"
-    cursor_ids.execute(query, (upeople_id, field, field_type))
+    if field != '' and field is not None and field != 'None':
+        if (len(search_identity(cursor_ids, field, field_type)) > 0):
+            return
+        query = "INSERT INTO identities (upeople_id, identity, type)" + \
+                "VALUES (%s, %s, %s)"
+        cursor_ids.execute(query, (upeople_id, field, field_type))
 
 def insert_upeople(cursor_ids, cursor_ds, people_id, field, field_type):
     # Insert in people_upeople, identities and upeople (new identitiy)
+    if not (field != '' and field is not None and field != 'None'):
+        return None
 
     # Max (upeople_)id FROM upeople table
     query = "SELECT MAX(id) FROM upeople;"
@@ -130,21 +133,11 @@ def insert_upeople(cursor_ids, cursor_ds, people_id, field, field_type):
 
     insert_identity(cursor_ids, upeople_id, field, field_type)
 
-    reuse_identity(cursor_ds, people_id, upeople_id)
+    insert_people_upeople(cursor_ds, people_id, upeople_id)
 
     return upeople_id
 
-
-def search_identity(cursor_ids, field, field_type):
-    query = "SELECT upeople_id FROM identities WHERE identity = %s AND type=%s"
-    results = int(cursor_ids.execute(query, (field, field_type)))
-    if results > 0:
-        return cursor_ids.fetchall()
-    else:
-        return []
-
-
-def reuse_identity(cursor_ds, people_id, upeople_id):
+def insert_people_upeople(cursor_ds, people_id, upeople_id):
     query = "INSERT INTO people_upeople (people_id, upeople_id) "
     query += "VALUES (%s, %s)"
     try:
@@ -153,28 +146,13 @@ def reuse_identity(cursor_ds, people_id, upeople_id):
         # logging.info(str(people_id) + " to " + str(upeople_id) + " already exits")
         pass
 
-def process_identity(cursor_ids, cursor_ds, people_id, field, field_type):
-    global reusedids, newids
-    results_ids = []
-    if field_type == "name":
-        # For name, at least first and family
-        # \s: any whitespace character \w: any alphanumeric character and the underscore
-        if (re.match(r"\w+\s\w+",field)):
-            results_ids = search_identity(cursor_ids, field, field_type)
+def search_identity(cursor_ids, field, field_type):
+    query = "SELECT upeople_id FROM identities WHERE identity = %s AND type=%s"
+    results = int(cursor_ids.execute(query, (field, field_type)))
+    if results > 0:
+        return cursor_ids.fetchall()
     else:
-        results_ids = search_identity(cursor_ids, field, field_type)
-    if len(results_ids) > 0:
-        upeople_id = int(results_ids[0][0])
-        #logging.info ("Reusing identity by " + field_type + " "
-        #       + field).encode('utf-8')
-        reuse_identity(cursor_ds, people_id, upeople_id)
-        reusedids += 1
-    else:
-        upeople_id = insert_upeople(cursor_ids, cursor_ds, people_id,
-                                    field, field_type)
-        newids += 1
-    return upeople_id
-
+        return []
 
 def main():
     global reusedids, newids
@@ -213,11 +191,12 @@ def main():
     logging.info ("Generating unique identities for " + data_source)
     logging.info (" Total identities to analyze: " + str(total))
 
+    # people_id used for main identifier for upeople
     for result in results:
         if data_source in ['irc','mediawiki']:
             name = result[0]
-            people_id = name
-            email = user_id = None
+            people_id = user_id = name
+            email = None
         elif data_source in ['releases', 'qaforums']:
             people_id = int(result[0])
             name = result[1]
@@ -236,24 +215,48 @@ def main():
 
         upeople_id = None
 
-        if name != '' and name is not None and name != 'None':
-            if (upeople_id):
+        # Try to find the upeople using all identifiers
+        # If upeople is not found create the new identity
+        # We use the email field available in all data sources as the main identifier
+        for field_type in  ['name','email','user_id']:
+            if field_type == 'email': field = email
+            elif field_type == 'name':
+                field = name
+                if field is None: continue
+                # For name, at least first and family
+                # \s: any whitespace character \w: any alphanumeric character and the underscore
+                if not re.match(r"\w+\s\w+", field): continue
+            elif field_type == 'user_id': field = user_id
+            if field != '' and field is not None and field != 'None':
+                results_ids = search_identity(cursor_ids, field, field_type)
+                if len(results_ids) > 0:
+                    upeople_id = int(results_ids[0][0])
+
+        if upeople_id is None:
+            upeople_id = insert_upeople(cursor_ids, cursor_ds, people_id,
+                                        email, "email")
+            if upeople_id is None:
+                upeople_id = insert_upeople(cursor_ids, cursor_ds, people_id,
+                                            user_id, "user_id")
+            if upeople_id is None:
+                if name is not None:
+                    if re.match(r"\w+\s\w+", name):
+                        upeople_id = insert_upeople(cursor_ids, cursor_ds, people_id,
+                                                name, "name")
+            if upeople_id is None:
+                logging.error("Can't register %s %s %s" % (email, name, user_id))
+                continue
+            newids += 1
+        else: reusedids += 1
+
+        # We have now the upeople_id, but we don't now with which field.
+        # Try to insert all fields and in insert_identity if already do nothing
+        insert_identity(cursor_ids, upeople_id, email, "email")
+        insert_identity(cursor_ids, upeople_id, user_id, "user_id")
+        # Just insert identifiers with a correct format for name
+        if name is not None:
+            if re.match(r"\w+\s\w+", name):
                 insert_identity(cursor_ids, upeople_id, name, "name")
-            else:
-                upeople_id = process_identity(cursor_ids, cursor_ds,
-                                              people_id, name, "name")
-        if email != '' and email is not None and email != 'None':
-            if (upeople_id):
-                insert_identity(cursor_ids, upeople_id, email, "email")
-            else:
-                upeople_id = process_identity(cursor_ids, cursor_ds,
-                                              people_id, email, "email")
-        if user_id != '' and user_id is not None and user_id != 'None':
-            if (upeople_id):
-                insert_identity(cursor_ids, upeople_id, user_id, "user_id")
-            else:
-                upeople_id = process_identity(cursor_ids, cursor_ds,
-                                              people_id, user_id, "user_id")
 
     db_ids.commit()
     db_database_ds.commit()
