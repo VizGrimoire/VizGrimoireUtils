@@ -247,7 +247,10 @@ def main():
                 logging.error("Can't register %s %s %s" % (email, name, user_id))
                 continue
             newids += 1
-        else: reusedids += 1
+        else:
+            # The empty people_upeople table should be populated
+            insert_people_upeople(cursor_ds, people_id, upeople_id)
+            reusedids += 1
 
         # We have now the upeople_id, but we don't now with which field.
         # Try to insert all fields and in insert_identity if already do nothing
