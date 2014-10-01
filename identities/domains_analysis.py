@@ -27,6 +27,7 @@
 # This will provide two tables: domains and upeople_domains
 
 
+import logging
 import MySQLdb
 import sys
 import re
@@ -51,7 +52,7 @@ def create_tables(db, connector):
        query = "CREATE INDEX domains_names ON domains (name)"
        connector.execute(query)
    except Exception:
-       print "Index domains.name  already created"
+       logging.info ("Index domains.name  already created")
 
    query = "CREATE TABLE IF NOT EXISTS upeople_domains (" + \
            "id int(11) NOT NULL AUTO_INCREMENT," + \
@@ -77,7 +78,7 @@ def connect(cfg):
       db = MySQLdb.connect(user = user, passwd = password, db = db)
       return db, db.cursor()
    except:
-      print("Database connection error")
+      logging.error("Database connection error")
       raise
 
 
@@ -134,7 +135,8 @@ def insert_upeople_domain(connector, upeople_id, domain_id):
     try:
         execute_query(connector, q)
     except:
-        print "Already inserted: " +str(upeople_id)+ " in domain "+ str(domain_id) + " in 1900-01-01"
+        # logging.info("Already inserted: " +str(upeople_id)+ " in domain "+ str(domain_id) + " in 1900-01-01")
+        pass
 
 
 def main(db):
@@ -156,5 +158,5 @@ def main(db):
          domain = str(m.groups()[1].split('.')[0])
          domain_id = get_domain_id(connector, domain)
       insert_upeople_domain(connector, upeople_id, domain_id)
-      
+
 if __name__ == "__main__":main(sys.argv[1])

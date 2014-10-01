@@ -189,7 +189,7 @@ def create_schema(cursor, db, upeople):
                                   people_upeople pup, 
                                   upeople u 
                              WHERE p.id=pup.people_id and 
-                                   pup.upeople_id=u.id 
+                                   pup.upeople_id=u.id and p.name<>''
                              ORDER by u.id""")
     cursor.execute("""UPDATE identities set type='name'
                       WHERE type is null""")
@@ -242,9 +242,9 @@ def update_schema(cursor, db, upeople):
                       from people_upeople);"""
 
     results = execute_query(cursor, query)
-    print results
+    # print results
     for result in results:
-        print result
+        # print result
         # check if the algorithm was able to detect duplicated identities
         # with this set of developers. This is done, checking if the people_id
         # is different from the upeople_id in the tuple upeople
@@ -258,8 +258,9 @@ def update_schema(cursor, db, upeople):
                     execute_query(cursor, query)
                     #To be fixed: this action will probably introduce repeated emails or names
                     #at some point
+                    ident = str(result[1]).replace("'", "\\'")
                     query = "INSERT INTO identities(upeople_id, identity, type) " +\
-                            " values(" + str(person[1]) + ", '" + result[1] + "', 'name')"
+                            " values(" + str(person[1]) + ", '" + ident + "', 'name')"
                     execute_query(cursor, query)
                     query = "INSERT INTO identities(upeople_id, identity, type) " +\
                             " values(" + str(person[1]) + ", '" + result[2] + "', 'email')"
@@ -271,11 +272,12 @@ def update_schema(cursor, db, upeople):
                     query = "insert into people_upeople(people_id, upeople_id) " +\
                             " values(" + str(person[0]) + ", " + str(max_id) + ")"
                     execute_query(cursor, query)
+                    ident = str(result[1]).replace("'", "\\'")
                     query = "insert into upeople(id, identifier) " +\
-                            " values(" + str(max_id) + ", '" + str(result[1]) + "')"
+                            " values(" + str(max_id) + ", '" + ident + "')"
                     execute_query(cursor, query)
                     query = "INSERT INTO identities(upeople_id, identity, type) " +\
-                            " values(" + str(max_id) + ", '" + result[1] + "', 'name')"
+                            " values(" + str(max_id) + ", '" + ident + "', 'name')"
                     execute_query(cursor, query)
                     query = "INSERT INTO identities(upeople_id, identity, type) " +\
                             " values(" + str(max_id) + ", '" + result[2] + "', 'email')"
@@ -334,6 +336,9 @@ for person in people:
     # Let's substitute them for something meaningful (the id)
     if name in ("???", "?", "", "root"):
         name = "**Unknown**" + "%3d" % id
+    # In SVN we don't have the email
+    if email is None:
+        email = ""
     personsById[id] = {'name': name, 'email': email}
     # Is name in names?
     uidName = identitiesNames.find (name)
