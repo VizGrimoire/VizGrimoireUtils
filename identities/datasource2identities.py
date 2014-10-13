@@ -113,10 +113,11 @@ def create_tables(db, connector):
 def insert_identity(cursor_ids, upeople_id, field, field_type):
     if field != '' and field is not None and field != 'None':
         if (len(search_identity(cursor_ids, field, field_type)) > 0):
-            return
+            return False
         query = "INSERT INTO identities (upeople_id, identity, type)" + \
                 "VALUES (%s, %s, %s)"
         cursor_ids.execute(query, (upeople_id, field, field_type))
+        return True
 
 def insert_upeople(cursor_ids, cursor_ds, people_id, field, field_type):
     # Insert in people_upeople, identities and upeople (new identitiy)
@@ -154,8 +155,31 @@ def search_identity(cursor_ids, field, field_type):
     else:
         return []
 
+def search_identity_memory (identities, field, field_type):
+    upeople_id = None
+    # upeople_id, identity, type in identities
+    for identity in identities:
+        if identity[1] == field and identity[2] == field_type:
+            upeople_id = identity[0]
+            break
+
+    return upeople_id
+
+def test_memory_tables(identities, upeople):
+    # Some testing. All info for the first identity
+    upeople_found = 0
+    for person in upeople:
+        for identity in identities:
+            if identity[0] == person[0]:
+                upeople_found += 1
+                break
+
+    logging.info("Upeople found in identities: %u" % (upeople_found))
+    assert(upeople_found == len(upeople))
+
 def main():
-    global reusedids, newids
+    newids = reusedids = total_done = total = 0
+
 
     supported_data_sources = ["its","scr","mls","irc","mediawiki","releases","qaforums"]
 
@@ -170,6 +194,17 @@ def main():
 
     db_database_ds, cursor_ds = connect(cfg.db_name_ds, cfg)
     db_ids, cursor_ids = connect(cfg.db_name_ids, cfg)
+
+    # Load identities and upeople tables in memory
+    logging.info("Loading identities sql table in memory")
+    identities = execute_query(cursor_ids, "SELECT upeople_id, identity, type FROM identities")
+    logging.info("Identities loaded: %u" % (len(identities)))
+    logging.info("Loading upeople sql table in memory")
+    upeople = execute_query(cursor_ids, "SELECT id, identifier FROM upeople")
+    logging.info("Upeople loaded: %u" % (len(upeople)))
+    logging.info("Tables loaded in memory")
+
+    # test_memory_tables(identities, upeople)
 
     create_tables(db_database_ds, cursor_ds)
     if (data_source == "its" or data_source == "scr"):
@@ -228,9 +263,14 @@ def main():
                 if not re.match(r"\w+\s\w+", field): continue
             elif field_type == 'user_id': field = user_id
             if field != '' and field is not None and field != 'None':
-                results_ids = search_identity(cursor_ids, field, field_type)
-                if len(results_ids) > 0:
-                    upeople_id = int(results_ids[0][0])
+
+                upeople_id = search_identity_memory(identities, field, field_type)
+#                results_ids = search_identity(cursor_ids, field, field_type)
+#                if len(results_ids) > 0:
+#                    upeople_id = int(results_ids[0][0])
+
+        total_done += 1
+        if (total_done % 100 == 0): logging.info("%u/%u" % (total_done, total))
 
         if upeople_id is None:
             upeople_id = insert_upeople(cursor_ids, cursor_ds, people_id,
@@ -247,29 +287,39 @@ def main():
                 logging.error("Can't register %s %s %s" % (email, name, user_id))
                 continue
             newids += 1
+            # Reload sql table in memory
+            upeople = execute_query(cursor_ids, "SELECT id, identifier FROM upeople")
         else:
             # The empty people_upeople table should be populated
             insert_people_upeople(cursor_ds, people_id, upeople_id)
             reusedids += 1
 
-        # We have now the upeople_id, but we don't now with which field.
-        # Try to insert all fields and in insert_identity if already do nothing
-        insert_identity(cursor_ids, upeople_id, email, "email")
-        insert_identity(cursor_ids, upeople_id, user_id, "user_id")
+        total_done += 1
+        if (total_done % 100 == 0): logging.info("%u/%u" % (total_done, total))
+
+        # We have now the upeople_id, but we don't know with which field.
+        # Try to insert all fields and in insert_identity if already exists do nothing
+        added_identity = False
+        new_identity = insert_identity(cursor_ids, upeople_id, email, "email")
+        added_identity = new_identity
+        new_identity= insert_identity(cursor_ids, upeople_id, user_id, "user_id")
+        added_identity = new_identity or added_identity
         # Just insert identifiers with a correct format for name
         if name is not None:
             if re.match(r"\w+\s\w+", name):
-                insert_identity(cursor_ids, upeople_id, name, "name")
+                new_identity= insert_identity(cursor_ids, upeople_id, name, "name")
+                added_identity = new_identity or added_identity
+        if added_identity:
+            # reload sql table in memory for identities
+            identities = execute_query(cursor_ids, "SELECT upeople_id, identity, type FROM identities")
 
     db_ids.commit()
     db_database_ds.commit()
 
-    logging.info (" Total analyzed: " + str(total))
+    logging.info (" Total analyzed: " + str(total_done))
     logging.info (" New identities: " + str(newids))
     logging.info (" Reused identities: " + str(reusedids))
     return
 
 if __name__ == "__main__":
-    # Global vars
-    newids = reusedids = 0
     main()
