@@ -152,7 +152,7 @@ def init_env():
     grimoirelib = os.path.join(grimoire_lib_dir,"vizgrimoire")
     metricslib = os.path.join(grimoire_lib_dir,"vizgrimoire","metrics")
     studieslib = os.path.join(grimoire_lib_dir,"vizgrimoire","analysis")
-    alchemy = os.path.join(grimoire_lib_dir,"grimoirelib_alch")
+    alchemy = grimoire_lib_dir
     grimoireutils = os.path.join(tools_dir,"GrimoireUtils")
     for dir in [grimoirelib,metricslib,studieslib,alchemy,grimoireutils]:
         sys.path.append(dir)
