@@ -105,6 +105,10 @@ def read_options():
                       dest="affiliations_file",
                       help="Creates mapping between identities and affiliations")
 
+    parser.add_option("--changes",
+                      action="store_true",
+                      dest="changes",
+                      help="Detect changes between automator config and projects data")
 
     (opts, args) = parser.parse_args()
     if len(args) != 0:
@@ -116,6 +120,8 @@ def read_options():
     if (opts.affiliations_file and not opts.automator_file):
         parser.error("affiliations option needs automator config file")
 
+    if (opts.changes and not opts.automator_file):
+        parser.error("changes option needs automator config file")
 
     return opts
 
@@ -132,6 +138,25 @@ def get_scm_url(repo):
                 logging.warn("Discarding. URL path empty: " + url)
                 url = None
     return url
+
+# From launch.py: git specific: search all repos in a directory recursively
+def get_scm_repos_from_dir (dir):
+    all_repos = []
+
+    if not os.path.isdir(dir): return all_repos
+
+    repos = os.listdir(dir)
+
+    for r in repos:
+        repo_dir_git = os.path.join(dir,r,".git")
+        if not os.path.isdir(repo_dir_git):
+            sub_repos = get_scm_repos_from_dir(os.path.join(dir,r))
+            for sub_repo in sub_repos:
+                all_repos.append(sub_repo)
+        else:
+            all_repos.append(r)
+    return all_repos
+
 
 def get_scm_repos(project):
     repos = project['source_repo']
@@ -158,20 +183,22 @@ def get_its_repos(project):
         repos_list.append(urllib.unquote(repo['query_url']))
     return repos_list
 
-def get_mls_repos(project):
+def get_mls_repos(project, original = False):
     repos_list = []
     info = project['dev_list']
     if not isinstance(info, list): # if list, no data
         if info['url'] is not None:
             url = info['url']
-            # Change URL because local analysis
-            # https://dev.eclipse.org/mailman/listinfo/emft-dev is
-            # /mnt/mailman_archives/emft-dev.mbox
-            # local_url = "/mnt/mailman_archives/"+url.split("listinfo/")[1]+".mbox"
-            # New format: /mnt/mailman_archives/emft-dev.mbox/emft-dev.mbox
-            name = url.split("listinfo/")[1]
-            local_url = "/mnt/mailman_archives/"+name+".mbox/"+name+".mbox"
-            repos_list.append(local_url)
+            if not original:
+                # Change URL because local analysis
+                # https://dev.eclipse.org/mailman/listinfo/emft-dev is
+                # /mnt/mailman_archives/emft-dev.mbox
+                # local_url = "/mnt/mailman_archives/"+url.split("listinfo/")[1]+".mbox"
+                # New format: /mnt/mailman_archives/emft-dev.mbox/emft-dev.mbox
+                name = url.split("listinfo/")[1]
+                local_url = "/mnt/mailman_archives/"+name+".mbox/"+name+".mbox"
+                repos_list.append(local_url)
+            else: repos_list.append(url)
     return repos_list
 
 def get_irc_repos(project):
@@ -290,7 +317,7 @@ def show_projects_tree(projects, html = False, template_file = None):
 
     def get_title(project_name):
         return projects[project_name]['title']
-    
+
     def find_children(project):
         children =[]
         for key in projects:
@@ -305,12 +332,12 @@ def show_projects_tree(projects, html = False, template_file = None):
         content = fd.read()
         fd.close()
         return content.replace("STRING_TO_BE_REPLACED", tree)
-    
+
     def show_tree(project, level, projects_url):
         tree = ""
         children = find_children(project)
         if len(children) == 0: return (0,tree)
-        
+
         if html:
                 id_name = project.replace('.','_') + str(level)
                 collapse_html_h = '<div id="collapse%s" class="panel-collapse collapse">' % (id_name)
@@ -321,7 +348,7 @@ def show_projects_tree(projects, html = False, template_file = None):
             level_str = ""
             collapse_html = ""
             if (html):
-                id_name = child.replace('.','_') + str(level)                
+                id_name = child.replace('.','_') + str(level)
                 child_url = "<a href='project.html?project=%s'>%s</a>" % (child, get_title(child))
 
                 for i in range(0, level): level_str += " "
@@ -329,14 +356,14 @@ def show_projects_tree(projects, html = False, template_file = None):
             else:
                 for i in range(0, level): level_str += "-"
                 tree += level_str + " " + child + "\n"
-                
+
             aux = show_tree(child, level, projects_url)
             nchildren = aux[0]
-            childs_tree = aux[1]            
+            childs_tree = aux[1]
             if len(childs_tree) > 0:
                 if html:
                     collapse_html = '<a data-toggle="collapse" data-parent="#accordion" href="#collapse%s"><span class="label">%s subprojects</span> </a>' % (id_name, str(nchildren))
-                    tree += collapse_html                    
+                    tree += collapse_html
                     tree += childs_tree
             else:
                 tree += childs_tree
@@ -508,6 +535,30 @@ def get_project_children(project_key, projects):
 def get_project_repos(project, projects, data_source):
     """get all repositories for a project in a data source"""
     repos = get_repos_list_project(project, projects, data_source)
+    return repos
+
+def get_automator_repos(data_source, automator_file):
+    """get all repositories in automator config for a data source"""
+
+    repos = None
+
+    parser = get_automator_parser(automator_file)
+    scm_dir =  os.path.join(os.path.dirname(automator_file),"..","scm")
+
+    if data_source == "scm":
+        repos = get_scm_repos_from_dir (scm_dir)
+    elif data_source == "its":
+        repos = parser.get('bicho','trackers').split(",")
+    elif data_source == "scr":
+        repos = parser.get('gerrit','projects').split(",")
+    elif data_source == "mls":
+        repos = parser.get('mlstats','mailing_lists').split(",")
+    elif data_source == "irc":
+        logging.info(data_source + " repos list not yet supported")
+
+    # Removed |n used for formatting
+    repos = [repo.replace('\n', '') for repo in repos]
+
     return repos
 
 def set_identities_aff(identities, aff, automator_file):
@@ -756,6 +807,40 @@ def create_projects_db_info(projects, automator_file):
 
     logging.info("Projects repositories added")
 
+def show_changes(projects, automator_file):
+    # scr and irc not yet implemented
+    # for ds in ["scm","its","mls"]:
+    for ds in ["its","mls"]:
+        added = [] # added repositories
+        removed = [] # removed repositories
+        repos = []
+        automator_repos = get_automator_repos(ds, automator_file)
+        if ds == "its":
+            automator_repos = [repo.replace("'", "") for repo in automator_repos]
+
+        for project in projects:
+            if ds == "its":
+                repos_prj = get_its_repos(projects[project])
+                for repo in repos_prj: repos.append(repo)
+            elif ds == "scm":
+                repos_prj = get_scm_repos(projects[project])
+                for repo in repos_prj: repos.append(repo)
+            elif ds == "mls":
+                repos_prj = get_mls_repos(projects[project])
+                for repo in repos_prj: repos.append(repo)
+        for repo in repos:
+            if repo not in automator_repos:
+                added.append(repo)
+        for repo in automator_repos:
+            if repo not in repos:
+                removed.append(repo)
+        # print repos
+        print "Removed repositories for %s %s" % (ds, removed)
+        print "Added repositories for %s %s" % (ds, added)
+
+        # print(repos)
+        # print(automator_repos)
+
 if __name__ == '__main__':
     opts = read_options()
     metaproject = opts.url.replace("/","_")
@@ -794,5 +879,7 @@ if __name__ == '__main__':
         create_projects_db_info(projects, opts.automator_file)
     elif opts.affiliations_file is not None:
         create_affiliations_identities(opts.affiliations_file, opts.automator_file)
+    elif opts.changes:
+        show_changes(projects, opts.automator_file)
     else:
         show_projects(projects)
