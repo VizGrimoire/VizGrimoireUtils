@@ -810,7 +810,7 @@ def create_projects_db_info(projects, automator_file):
 def show_changes(projects, automator_file):
     # scr and irc not yet implemented
     # for ds in ["scm","its","mls"]:
-    for ds in ["its","mls"]:
+    for ds in ["scm"]:
         added = [] # added repositories
         removed = [] # removed repositories
         repos = []
@@ -824,7 +824,10 @@ def show_changes(projects, automator_file):
                 for repo in repos_prj: repos.append(repo)
             elif ds == "scm":
                 repos_prj = get_scm_repos(projects[project])
-                for repo in repos_prj: repos.append(repo)
+                repos_prj = [repo.split("/")[-1] for repo in repos_prj]
+                repos_prj = [repo.replace(".git","") for repo in repos_prj]
+                for repo in repos_prj: 
+                    if repo<>'': repos.append(repo)
             elif ds == "mls":
                 repos_prj = get_mls_repos(projects[project])
                 for repo in repos_prj: repos.append(repo)
@@ -834,12 +837,8 @@ def show_changes(projects, automator_file):
         for repo in automator_repos:
             if repo not in repos:
                 removed.append(repo)
-        # print repos
         print "Removed repositories for %s %s" % (ds, removed)
         print "Added repositories for %s %s" % (ds, added)
-
-        # print(repos)
-        # print(automator_repos)
 
 if __name__ == '__main__':
     opts = read_options()
