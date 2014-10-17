@@ -809,8 +809,7 @@ def create_projects_db_info(projects, automator_file):
 
 def show_changes(projects, automator_file):
     # scr and irc not yet implemented
-    # for ds in ["scm","its","mls"]:
-    for ds in ["scm"]:
+    for ds in ["scm","its","mls"]:
         added = [] # added repositories
         removed = [] # removed repositories
         repos = []
