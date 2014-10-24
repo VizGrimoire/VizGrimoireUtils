@@ -296,10 +296,11 @@ def show_projects_hierarchy(projects):
         #aux["id"]= key
         aux["title"] = data['title']
         if (len(data['parent_project']) == 0):
-            aux["parent_project"] = None
+            aux["parent_project"] = 'root'
         else:
             aux["parent_project"] = data['parent_project'][0]['id']
         res[key] = aux
+    res['root'] = {"title": "Eclipse Foundation"}
     print json.dumps(res)
 
 
@@ -789,6 +790,8 @@ def create_projects_db_info(projects, automator_file):
 
     def insert_repos(project_id, repos, data_source):
         for repo in repos:
+            if data_source == "its":
+                repo = repo.replace(" ","%20")
             q = "INSERT INTO project_repositories VALUES (%s, %s, %s)"
             cursor.execute(q, (project_id, data_source, repo))
 
