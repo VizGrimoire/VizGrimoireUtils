@@ -1,8 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# This script parses IRC logs and stores the extracted data in
-# a database
+# This script manage the information about Eclipse projects
 # 
 # Copyright (C) 2014 Bitergia
 #
