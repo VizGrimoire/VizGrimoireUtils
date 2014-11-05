@@ -67,7 +67,12 @@ def create_all_file():
     all_json = {}
 
     for json_file in json_files:
-        f = open(os.path.join(opts.json_dir,json_file), 'r')
+        fname = os.path.join(opts.json_dir,json_file)
+        if os.path.isdir(fname):
+            logging.warn(fname + " is a directory. Not including.")
+            continue
+        print(fname)
+        f = open(fname, 'r')
         data = f.read()
         all_json[json_file] = json.loads(data)
         f.close()
