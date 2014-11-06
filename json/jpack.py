@@ -28,7 +28,6 @@
 import json
 import logging
 from optparse import OptionParser
-import pprint
 import os.path
 import sys
 
