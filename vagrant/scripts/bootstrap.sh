@@ -56,6 +56,10 @@ cd ${SCRIPTS_PATH}
 # load environment variables
 source variables.sh
 
+source automator.sh
+
+exit 0
+
 # swap: 512 MB default
 bash swap.sh
 
@@ -72,8 +76,7 @@ bash setup-user.sh
 bash install-metrics-grimoire.sh
 
 # install Automator (GrimoireLib+VizGrimoire)
-bash install-automator.sh
-bash start-automator.sh
+bash automator.sh
 
 # clean package cache
 apt-get -qy clean
