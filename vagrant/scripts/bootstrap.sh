@@ -62,6 +62,9 @@ bash swap.sh
 # load packages
 bash packages.sh
 
+# install all R packages
+bash install-r-packages.sh
+
 # create main user for install and execution
 bash setup-user.sh
 
@@ -70,9 +73,6 @@ bash install-metrics-grimoire.sh
 
 # install Automator (GrimoireLib+VizGrimoire)
 bash install-automator.sh
-
-# install all R packages
-bash install-r-packages.sh
 
 # clean package cache
 apt-get -qy clean
