@@ -1,7 +1,6 @@
 #!/bin/bash
 
-export AUTOMATOR_SCRIPTS="${SCRIPTS_PATH}/automator"
-
-for f in $( ls ${AUTOMATOR_SCRIPTS}/*.sh ) ; do
-    bash ${f}
-done
+su - ${DASH_USER} << EOF
+rm -rf Automator
+git clone https://github.com/MetricsGrimoire/Automator.git
+EOF

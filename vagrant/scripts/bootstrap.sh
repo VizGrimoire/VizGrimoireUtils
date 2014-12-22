@@ -12,11 +12,11 @@ fi
 
 case ${DIST} in
     "debian7")
-	echo "Debian 7 provisioning is not supported yet"
+	echo "Debian 7 provisioning for Grimoire is not supported yet"
     exit 1
 	;;
     "ubuntu14.04")
-	echo "Provisioning Ubuntu 14.04."
+	echo "Provisioning Grimoire for Ubuntu 14.04."
 	;;
     *)
 	echo "Unsupported distribution"
@@ -57,16 +57,19 @@ cd ${SCRIPTS_PATH}
 source variables.sh
 
 # swap: 512 MB default
-bash swap.sh
+# bash swap.sh
 
 # load packages
-bash packages.sh
+# bash packages.sh
+
+# create main user for install and execution
+# bash setup-user.sh
 
 # install MetricsGrimoire
 bash install-metrics-grimoire.sh
 
 # install Automator (GrimoireLib+VizGrimoire)
-bash install-automator.sh
+# bash install-automator.sh
 
 # clean package cache
 apt-get -qy clean

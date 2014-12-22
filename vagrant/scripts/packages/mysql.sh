@@ -16,4 +16,4 @@ mysql-server-${MYSQL_UBUNTU_VERSION} mysql-server/root_password_again seen true
 EOF
 
 # install server
-apt-get install -qy mysql-server
+apt-get install -qy mysql-server libmysqlclient-dev python-mysqldb
