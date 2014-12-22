@@ -57,19 +57,22 @@ cd ${SCRIPTS_PATH}
 source variables.sh
 
 # swap: 512 MB default
-# bash swap.sh
+bash swap.sh
 
 # load packages
-# bash packages.sh
+bash packages.sh
 
 # create main user for install and execution
-# bash setup-user.sh
+bash setup-user.sh
 
 # install MetricsGrimoire
 bash install-metrics-grimoire.sh
 
 # install Automator (GrimoireLib+VizGrimoire)
-# bash install-automator.sh
+bash install-automator.sh
+
+# install all R packages
+bash install-r-packages.sh
 
 # clean package cache
 apt-get -qy clean
