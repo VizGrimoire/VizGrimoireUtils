@@ -2,7 +2,7 @@
 
 su - ${DASH_USER} << EOF
 
-rm -rf metrics_grimoire
+sudo rm -rf metrics_grimoire
 mkdir metrics_grimoire
 cd metrics_grimoire
 

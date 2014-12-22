@@ -73,6 +73,7 @@ bash install-metrics-grimoire.sh
 
 # install Automator (GrimoireLib+VizGrimoire)
 bash install-automator.sh
+bash start-automator.sh
 
 # clean package cache
 apt-get -qy clean
