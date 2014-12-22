@@ -11,7 +11,7 @@ git clone https://github.com/MetricsGrimoire/CVSAnalY.git
 git clone https://github.com/MetricsGrimoire/Bicho.git
 git clone https://github.com/MetricsGrimoire/MailingListStats.git
 cd  MailingListStats
-git checkout c6658738845471f6629aff4c84b96b0e3db8437d
+git checkout 3a308fd9a6337ceca0056d6c459c87f4c12e4a55
 cd ..
 git clone https://github.com/MetricsGrimoire/IRCAnalysis.git
 git clone https://github.com/MetricsGrimoire/Octopus.git
