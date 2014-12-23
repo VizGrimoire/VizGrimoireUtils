@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # default values
-DBROOTPW=${MYSQL_ROOTPW:-rootpw}
+DBROOTPW=${ROOT_DBPASSWD:-rootpw}
 MYSQL_UBUNTU_VERSION="5.5"
 
 # install debconf-utils for the debconf-set-selections command

@@ -12,6 +12,13 @@ export UTILS_PATH="${SCRIPTS_PATH}/util"
 # interface for the public ip
 export IFACE="${IFACE:-eth1}"
 
+# default password for mysql root user
+export ROOT_DBPASSWD="rootpw"
+
+# user and password for github
+export GITHUB_USER=""
+export GITHUB_PASSWD=""
+
 ### dashboard related variables
 export DASH_HOSTNAME="dash.${HOSTNAME}"
 export DASH_URL="http://${DASH_HOSTNAME}/browser"

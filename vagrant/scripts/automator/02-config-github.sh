@@ -1,18 +1,20 @@
 #!/bin/bash
 
-# Configure Automator to work with github projects
-# SCM
-# Tickets
-# Pull Requests
-# Others
 su - ${DASH_USER} << EOF
 cd Automator
-
-sed -i tests/Test/conf/main.conf \
-    -e "s/\[gerrit\]/\[gerrit_off\]/" \
-    -e "s/^db_gerrit/#db_gerrit/"
-    -e "s/\[irc\]/\[irc_off\]/" \
-    -e "s/^db_irc/#db_gerrit/"
-    -e "s/\[mediawiki\]/\[mediawiki_off\]/"
-    -e "s/^db_mediawiki/#db_gerrit/"
+./create_projects.py -p tests/github_test.conf -d tests -s -n GitHubTest  --dbuser=root --dbpasswd=${ROOT_DBPASSWD}
+sed -i tests/GitHubTest/conf/main.conf \
+    -e "s/db_password =[ ]*$/db_password = rootpw/" \
+    -e "s/# backend_user = miningbitergia/backend_user = ${GITHUB_USER}/" \
+    -e "s/# backend_password = passwd/backend_password =  ${GITHUB_PASSWD}/"
+./launch.py -d /home/automator/Automator/tests/GitHubTest
+cd /home/automator/Automator/tests/GitHubTest/tools/VizGrimoireJS
+make
 EOF
+
+rm -rf /var/www/github
+ln -s /home/automator/Automator/tests/GitHubTest/tools/VizGrimoireJS/browser /var/www/github
+
+
+
+# backend_password = passwd

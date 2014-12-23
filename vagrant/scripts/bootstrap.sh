@@ -56,10 +56,6 @@ cd ${SCRIPTS_PATH}
 # load environment variables
 source variables.sh
 
-bash automator.sh
-
-exit 0
-
 # swap: 512 MB default
 bash swap.sh
 
