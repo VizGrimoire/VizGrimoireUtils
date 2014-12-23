@@ -1,7 +1,5 @@
 #!/bin/bash
 
-exit 0
-
 su - ${DASH_USER} << EOF
 
 rm -rf Automator
