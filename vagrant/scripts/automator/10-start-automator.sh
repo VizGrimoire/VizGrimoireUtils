@@ -7,4 +7,5 @@ cd /home/automator/Automator/tests/Test/tools/VizGrimoireJS
 make
 EOF
 
+rm /var/www/browser
 ln -s /home/automator/Automator/tests/Test/tools/VizGrimoireJS/browser /var/www/

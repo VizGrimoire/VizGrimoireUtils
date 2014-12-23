@@ -56,7 +56,7 @@ cd ${SCRIPTS_PATH}
 # load environment variables
 source variables.sh
 
-source automator.sh
+bash automator.sh
 
 exit 0
 
