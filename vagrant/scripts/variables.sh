@@ -16,8 +16,8 @@ export IFACE="${IFACE:-eth1}"
 export ROOT_DBPASSWD="rootpw"
 
 # user and password for github
-export GITHUB_USER="miningbitergia"
-export GITHUB_PASSWD="b1t3rgia_d0s"
+export GITHUB_USER=""
+export GITHUB_PASSWD=""
 
 ### dashboard related variables
 export DASH_HOSTNAME="dash.${HOSTNAME}"
