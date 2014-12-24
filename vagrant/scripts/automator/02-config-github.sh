@@ -12,11 +12,8 @@ sed -i tests/GitHubTest/conf/main.conf \
 ./launch.py -d /home/automator/Automator/tests/GitHubTest
 cd /home/automator/Automator/tests/GitHubTest/tools/VizGrimoireJS
 make
+cp ${SCRIPTS_PATH}/automator/menu-elements-github.json /home/automator/Automator/tests/GitHubTest/tools/VizGrimoireJS/browser/config/menu-elements.json
 EOF
 
 rm -rf /var/www/github
 ln -s /home/automator/Automator/tests/GitHubTest/tools/VizGrimoireJS/browser /var/www/github
-
-
-
-# backend_password = passwd
