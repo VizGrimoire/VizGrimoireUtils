@@ -824,6 +824,10 @@ def show_changes(projects, automator_file):
                 repos_prj = get_its_repos(projects[project])
                 for repo in repos_prj: repos.append(repo)
             elif ds == "scm":
+                # Just support git repositories
+                if 'source_repo' in projects[project]:
+                    if len(projects[project]['source_repo'])>0:
+                        if projects[project]['source_repo'][0]['type'] != "git": continue
                 repos_prj = get_scm_repos(projects[project])
                 repos_prj = [repo.split("/")[-1] for repo in repos_prj]
                 repos_prj = [repo.replace(".git","") for repo in repos_prj]
