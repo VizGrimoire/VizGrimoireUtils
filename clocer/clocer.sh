@@ -7,6 +7,7 @@ PWD=`pwd`
 DB=cp_cvsanaly_PolarsysMaturity
 LOG=/tmp/clocer.log
 
+echo "Running clocer for ${PROJECTS_SCM}. Look to ${LOG} to see the progress."
 echo $(cat <<EOF
 DROP TABLE IF exists t, metadata;
 create table metadata (
@@ -35,3 +36,4 @@ alter table metadata add total_sloc INT(11);
 update metadata m, (select Project, sum(nCode) as sum_sloc from t group by Project) t set m.total_sloc = t.sum_sloc where m.Project = t.Project;
 EOF
 ) | mysql -u root ${DB}
+echo "clocer finished. The data should be in ${DB}"
