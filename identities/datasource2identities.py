@@ -185,7 +185,7 @@ def main():
     elif (data_source == "qaforums"):
         query = "SELECT id, username, email FROM people"
     elif (data_source == "pullpo"):
-        query = "SELECT login FROM people"
+        query = "SELECT id, login FROM people"
     else:
         return
     results = execute_query(cursor_ds, query)
@@ -195,7 +195,7 @@ def main():
 
     # people_id used for main identifier for upeople
     for result in results:
-        if data_source in ['irc','mediawiki','pullpo']:
+        if data_source in ['irc','mediawiki']:
             name = result[0]
             people_id = user_id = name
             email = None
@@ -209,11 +209,14 @@ def main():
             email = result[1]
             people_id = email
             user_id = None
+        elif (data_source == "pullpo"):
+            people_id = result[0]
+            name = user_id = result[1]
+            email = None
         else:
             people_id = int(result[0])
-            name = result[1]
-            email = result[2]
-            user_id = result[3]
+            user_id = name = result[1]
+            email = None
 
         upeople_id = None
 
