@@ -36,4 +36,5 @@ alter table metadata add total_sloc INT(11);
 update metadata m, (select Project, sum(nCode) as sum_sloc from t group by Project) t set m.total_sloc = t.sum_sloc where m.Project = t.Project;
 EOF
 ) | mysql -u root ${DB}
+rm /tmp/*.sql
 echo "clocer finished. The data should be in ${DB}"
