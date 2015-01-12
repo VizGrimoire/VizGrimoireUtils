@@ -157,7 +157,7 @@ def search_identity(cursor_ids, field, field_type):
 def main():
     global reusedids, newids
 
-    supported_data_sources = ["its","scr","mls","irc","mediawiki","releases","qaforums"]
+    supported_data_sources = ["its","scr","pullpo","mls","irc","mediawiki","releases","qaforums"]
 
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s')
 
@@ -184,6 +184,8 @@ def main():
         query = "SELECT id, username, email FROM users"
     elif (data_source == "qaforums"):
         query = "SELECT id, username, email FROM people"
+    elif (data_source == "pullpo"):
+        query = "SELECT login FROM people"
     else:
         return
     results = execute_query(cursor_ds, query)
@@ -193,7 +195,7 @@ def main():
 
     # people_id used for main identifier for upeople
     for result in results:
-        if data_source in ['irc','mediawiki']:
+        if data_source in ['irc','mediawiki','pullpo']:
             name = result[0]
             people_id = user_id = name
             email = None
