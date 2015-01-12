@@ -13,7 +13,9 @@ DROP TABLE IF exists t, metadata;
 create table metadata (
                 timestamp text,    
                 Project   text,    
-                elapsed_s real);   
+                elapsed_s real)
+    CHARACTER SET utf8,
+    COLLATE utf8_general_ci;
 create table t        (
                 Project   text   ,  
                 Language  text   ,  
@@ -21,7 +23,9 @@ create table t        (
                 nBlank    integer,  
                 nComment  integer,  
                 nCode     integer,  
-                nScaled   real   );
+                nScaled   real   )
+    CHARACTER SET utf8,
+    COLLATE utf8_general_ci;
 EOF
 ) | mysql -u root ${DB}
 cd "${PROJECTS_SCM}" 
