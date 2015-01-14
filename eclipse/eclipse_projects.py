@@ -182,7 +182,8 @@ def get_its_repos(project):
         repos_list.append(urllib.unquote(repo['query_url']))
     return repos_list
 
-def get_mls_repos(project, original = False):
+# TO BE REMOVED. Old format.
+def get_mls_repos_old(project, original = False):
     repos_list = []
     info = project['dev_list']
     if not isinstance(info, list): # if list, no data
@@ -200,6 +201,33 @@ def get_mls_repos(project, original = False):
             else: repos_list.append(url)
     return repos_list
 
+def get_mls_repos(project, original = False):
+    repos_list = []
+    data = project['mailing_lists']
+    for mlist in data:
+        if mlist['url'] is not None:
+            url = mlist['url']
+            if url == "": continue
+            if not original:
+                # Change URL because local analysis
+                # https://dev.eclipse.org/mailman/listinfo/emft-dev is
+                # /mnt/mailman_archives/emft-dev.mbox
+                # local_url = "/mnt/mailman_archives/"+url.split("listinfo/")[1]+".mbox"
+                # New format: /mnt/mailman_archives/emft-dev.mbox/emft-dev.mbox
+                name = url.split("listinfo/")
+                if len(name) < 2:
+                    logging.error("Wrong list URL: " + url)
+                    continue
+                name = name[1]
+                local_url = "/mnt/mailman_archives/"+name+".mbox/"+name+".mbox"
+                repos_list.append(local_url)
+            else: repos_list.append(url)
+    return repos_list
+
+def get_irc_repos(project):
+    repos_list = []
+    # We don't have data about IRC in projects JSON
+    return repos_list
 def get_irc_repos(project):
     repos_list = []
     # We don't have data about IRC in projects JSON
@@ -224,11 +252,7 @@ def parse_project(data):
         logging.info("More than one identifier")
     print("SCM: " + ",".join(get_scm_repos(data)))
     print("ITS: " + ",".join(get_its_repos(data)))
-    if not isinstance(data['dev_list'], list):
-        if data['dev_list']['url'] is None:
-            logging.warn("URL is None for MLS")
-        else:
-            print("MLS: " + data['dev_list']['url'])
+    print("MLS: " + ",".join(get_mls_repos(data)))
     print("Forums: " + ",".join(parse_repos(data['forums'])))
     print("Wiki: " + ",".join(parse_repos(data['wiki_url'])))
     if (len(data['parent_project'])>1):
@@ -403,6 +427,7 @@ def show_projects(projects):
     total_projects = 0
 
     for key in projects:
+        # if key != "iot.leshan": continue
         total_projects += 1
         parse_project(projects[key])
 
