@@ -182,8 +182,8 @@ def get_its_repos(project):
         repos_list.append(urllib.unquote(repo['query_url']))
     return repos_list
 
-# TO BE REMOVED. Old format.
-def get_mls_repos_old(project, original = False):
+# dev format in JSON
+def get_mls_repos_dev(project, original = False):
     repos_list = []
     info = project['dev_list']
     if not isinstance(info, list): # if list, no data
@@ -222,6 +222,8 @@ def get_mls_repos(project, original = False):
                 local_url = "/mnt/mailman_archives/"+name+".mbox/"+name+".mbox"
                 repos_list.append(local_url)
             else: repos_list.append(url)
+    repos_list += get_mls_repos_dev(project, original)
+    repos_list = list(set(repos_list))
     return repos_list
 
 def get_irc_repos(project):
