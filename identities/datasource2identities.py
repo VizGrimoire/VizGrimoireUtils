@@ -213,7 +213,7 @@ def main():
             people_id = result[0]
             name = user_id = result[1]
             email = None
-	elif (data_source == "its" or data_source == "scr"):
+        elif (data_source == "its" or data_source == "scr"):
             people_id = int(result[0])
             name = result[1]
             email = result[2]
