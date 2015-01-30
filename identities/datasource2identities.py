@@ -126,7 +126,10 @@ def insert_upeople(cursor_ids, cursor_ds, people_id, field, field_type):
     # Max (upeople_)id FROM upeople table
     query = "SELECT MAX(id) FROM upeople;"
     results = execute_query(cursor_ids, query)
-    upeople_id = int(results[0][0]) + 1
+    last_id = results[0][0]
+    if last_id is None: last_id = 0
+    upeople_id = int(last_id)
+    upeople_id += 1
 
     query = "INSERT INTO upeople (id, identifier) VALUES (%s, %s)"
     cursor_ids.execute(query, (upeople_id, field))
