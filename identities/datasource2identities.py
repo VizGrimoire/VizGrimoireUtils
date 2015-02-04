@@ -188,7 +188,7 @@ def main():
     elif (data_source == "qaforums"):
         query = "SELECT id, username, email FROM people"
     elif (data_source == "pullpo"):
-        query = "SELECT id, login FROM people"
+        query = "SELECT id, login, email FROM people"
     else:
         return
     results = execute_query(cursor_ds, query)
@@ -215,7 +215,7 @@ def main():
         elif (data_source == "pullpo"):
             people_id = result[0]
             name = user_id = result[1]
-            email = None
+            email = result[2]
         elif (data_source == "its" or data_source == "scr"):
             people_id = int(result[0])
             name = result[1]
