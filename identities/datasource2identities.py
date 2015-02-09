@@ -160,7 +160,7 @@ def search_identity(cursor_ids, field, field_type):
 def main():
     global reusedids, newids
 
-    supported_data_sources = ["its","scr","pullpo","mls","irc","mediawiki","releases","qaforums"]
+    supported_data_sources = ["its","its_1","scr","pullpo","mls","irc","mediawiki","releases","qaforums"]
 
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s')
 
@@ -175,7 +175,7 @@ def main():
     db_ids, cursor_ids = connect(cfg.db_name_ids, cfg)
 
     create_tables(db_database_ds, cursor_ds)
-    if (data_source == "its" or data_source == "scr"):
+    if (data_source == "its" or data_source == "its_1" or data_source == "scr"):
         query = "SELECT id, name, email, user_id FROM people"
     elif (data_source == "mls"):
         query = "SELECT name, email_address FROM people"
@@ -216,7 +216,7 @@ def main():
             people_id = result[0]
             name = user_id = result[1]
             email = result[2]
-        elif (data_source == "its" or data_source == "scr"):
+        elif (data_source == "its" or data_source == "its_1" or data_source == "scr"):
             people_id = int(result[0])
             name = result[1]
             email = result[2]
