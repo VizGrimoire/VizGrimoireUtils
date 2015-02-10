@@ -249,13 +249,13 @@ def main():
             upeople_id = insert_upeople(cursor_ids, cursor_ds, people_id,
                                         email, "email")
             if upeople_id is None:
-                upeople_id = insert_upeople(cursor_ids, cursor_ds, people_id,
-                                            user_id, "user_id")
-            if upeople_id is None:
                 if name is not None:
                     if re.match(r"\w+\s\w+", name):
                         upeople_id = insert_upeople(cursor_ids, cursor_ds, people_id,
                                                 name, "name")
+            if upeople_id is None:
+                upeople_id = insert_upeople(cursor_ids, cursor_ds, people_id,
+                                            user_id, "user_id")
             if upeople_id is None:
                 logging.error("Can't register %s %s %s" % (email, name, user_id))
                 continue
