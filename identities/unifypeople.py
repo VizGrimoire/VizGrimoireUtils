@@ -340,8 +340,6 @@ for person in people:
     personsById[id] = {'name': name, 'email': email}
     # Is name in names?
     uidName = identitiesNames.find (name)
-    if uidName == 0:
-        identitiesNames.insert (name, id)
     # Is name in emails? (probably it is actually an email)
     uidNameEmail = identitiesEmails.find (name)
     # Is name, lowercased and dotted, in emails?
@@ -351,8 +349,6 @@ for person in people:
         uidEmail = 0
     else:
         uidEmail = identitiesEmails.find (email)
-    if uidEmail == 0:
-        identitiesEmails.insert (email, id)
     #foundIds = [uidName, uidNameEmail, uidEmail, uidNameEmailDotted]
     foundIds = [uidName, uidNameEmail, uidEmail]
     foundIds = [el for el in foundIds if el != 0]
@@ -363,8 +359,14 @@ for person in people:
         duplicates.append(id)
         for dup in duplicates:
             dupIds[dup] = foundIds[0]
-
-
+        # Use the unique id for inserting in identities tables mapping
+        # so the identifier is related to the unique identity
+        id = foundIds[0]
+    if uidName == 0:
+        identitiesNames.insert (name, id)
+    if uidEmail == 0:
+        identitiesEmails.insert (email, id)
+    
 # Uncomment next lines for debugging results
 
 #for id in sorted(dupIds):
@@ -376,6 +378,7 @@ for person in people:
 #print "== Email addresses =="
 #identitiesEmails.print_all(":Email: ")
 print str(len(dupIds)) + " duplicate ids found."
+print dupIds
 
 # Create unique people table
 # Each row is a people identifier, and a unique identifier
