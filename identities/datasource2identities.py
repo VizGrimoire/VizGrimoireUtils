@@ -126,7 +126,10 @@ def insert_upeople(cursor_ids, cursor_ds, people_id, field, field_type):
     # Max (upeople_)id FROM upeople table
     query = "SELECT MAX(id) FROM upeople;"
     results = execute_query(cursor_ids, query)
-    upeople_id = int(results[0][0]) + 1
+    last_id = results[0][0]
+    if last_id is None: last_id = 0
+    upeople_id = int(last_id)
+    upeople_id += 1
 
     query = "INSERT INTO upeople (id, identifier) VALUES (%s, %s)"
     cursor_ids.execute(query, (upeople_id, field))
@@ -157,7 +160,7 @@ def search_identity(cursor_ids, field, field_type):
 def main():
     global reusedids, newids
 
-    supported_data_sources = ["its","scr","mls","irc","mediawiki","releases","qaforums"]
+    supported_data_sources = ["its","its_1","scr","pullpo","mls","irc","mediawiki","releases","qaforums"]
 
     logging.basicConfig(level=logging.INFO,format='%(asctime)s %(message)s')
 
@@ -172,7 +175,7 @@ def main():
     db_ids, cursor_ids = connect(cfg.db_name_ids, cfg)
 
     create_tables(db_database_ds, cursor_ds)
-    if (data_source == "its" or data_source == "scr"):
+    if (data_source == "its" or data_source == "its_1" or data_source == "scr"):
         query = "SELECT id, name, email, user_id FROM people"
     elif (data_source == "mls"):
         query = "SELECT name, email_address FROM people"
@@ -184,6 +187,8 @@ def main():
         query = "SELECT id, username, email FROM users"
     elif (data_source == "qaforums"):
         query = "SELECT id, username, email FROM people"
+    elif (data_source == "pullpo"):
+        query = "SELECT id, login, email FROM people"
     else:
         return
     results = execute_query(cursor_ds, query)
@@ -207,11 +212,19 @@ def main():
             email = result[1]
             people_id = email
             user_id = None
-        else:
+        elif (data_source == "pullpo"):
+            people_id = result[0]
+            name = user_id = result[1]
+            email = result[2]
+        elif (data_source == "its" or data_source == "its_1" or data_source == "scr"):
             people_id = int(result[0])
             name = result[1]
             email = result[2]
             user_id = result[3]
+        else:
+            people_id = int(result[0])
+            user_id = name = result[1]
+            email = None
 
         upeople_id = None
 
@@ -236,13 +249,13 @@ def main():
             upeople_id = insert_upeople(cursor_ids, cursor_ds, people_id,
                                         email, "email")
             if upeople_id is None:
-                upeople_id = insert_upeople(cursor_ids, cursor_ds, people_id,
-                                            user_id, "user_id")
-            if upeople_id is None:
                 if name is not None:
                     if re.match(r"\w+\s\w+", name):
                         upeople_id = insert_upeople(cursor_ids, cursor_ds, people_id,
                                                 name, "name")
+            if upeople_id is None:
+                upeople_id = insert_upeople(cursor_ids, cursor_ds, people_id,
+                                            user_id, "user_id")
             if upeople_id is None:
                 logging.error("Can't register %s %s %s" % (email, name, user_id))
                 continue
