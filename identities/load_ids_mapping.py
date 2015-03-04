@@ -158,10 +158,14 @@ def insert_upeople_country(cursor, upeople_id, country, debug):
         print ("New country added " + country)
     else:
         country_id = cursor.fetchall()[0][0]
-    
+
     try:
-        cursor.execute("INSERT INTO upeople_countries (country_id, upeople_id) VALUES (%s, '%s')"
-                   % (country_id, upeople_id))
+        if type(upeople_id) is str:
+            cursor.execute("INSERT INTO nationalities (country_id, uuid) VALUES (%s, '%s')"
+                           % (country_id, upeople_id))
+        else:
+            cursor.execute("INSERT INTO upeople_countries (country_id, upeople_id) VALUES (%s, '%s')"
+                           % (country_id, upeople_id))
     except:
         print ("Mapping already exists for " + upeople_id + " " + country)
 
@@ -207,7 +211,7 @@ def update_upeople_company(cursor, upeople_id, company, debug):
     except:
         print ("Mapping already exists for " + str(upeople_id) + " " + company)   
 
-def insert_upeople_company(cursor, upeople_id, company, debug):    
+def insert_upeople_company(cursor, upeople_id, company, debug):
     company_id = get_company_id(cursor, company, debug)
     query = "INSERT INTO upeople_companies (company_id, upeople_id) VALUES (%s, '%s')" % (company_id, upeople_id)
     if (debug): print query
@@ -232,13 +236,6 @@ def create_tables_countries(cursor, con):
     query = "CREATE TABLE IF NOT EXISTS countries (" + \
             "id int(11) NOT NULL AUTO_INCREMENT," + \
             "name varchar(255) NOT NULL," + \
-            "PRIMARY KEY (id)" + \
-            ") ENGINE=MyISAM DEFAULT CHARSET=utf8"
-    cursor.execute(query)
-
-    query = "CREATE TABLE IF NOT EXISTS countries_sh (" + \
-            "id int(11) NOT NULL AUTO_INCREMENT," + \
-            "uuid varchar(128) NOT NULL," + \
             "PRIMARY KEY (id)" + \
             ") ENGINE=MyISAM DEFAULT CHARSET=utf8"
     cursor.execute(query)
@@ -317,8 +314,12 @@ def create_test_data_countries(cursor, opts):
     test_countries = ['country1', 'country2', 'country3', 'country4', 'country5']
     cursor.execute("DELETE FROM countries")
     cursor.execute("DELETE FROM upeople_countries")
-    cursor.execute("SELECT id FROM upeople")
-    identities = cursor.fetchall()
+    try:
+        cursor.execute("SELECT id FROM upeople")
+        identities = cursor.fetchall()
+    except:
+        cursor.execute("SELECT uuid FROM uidentities")
+        identities = cursor.fetchall()
 
     for identity in identities:
         country = test_countries[random.randint(0, len(test_countries) - 1)]
