@@ -215,7 +215,7 @@ def insert_upeople_company(cursor, upeople_id, company, debug):
 
 def insert_upeople_organization(cursor, uuid, organization, debug):
     org_id = get_organization_id(cursor, organization, debug)
-    query = "INSERT INTO enrollments (organization_id, uuid) VALUES (%s, '%s')" % (org_id, uuid)
+    query = "INSERT INTO enrollments (organization_id, uuid, end) VALUES (%s, '%s', '2100-01-01')" % (org_id, uuid)
     if (debug): print query
     cursor.execute(query)
 
