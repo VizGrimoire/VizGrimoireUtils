@@ -81,6 +81,7 @@ def read_options():
 
 
 def update_uuid_identifier(cursor, uuid, identifier):
+    identifier = identifier.replace("'","\\'")
     q = "UPDATE uidentities SET identifier='%s' WHERE uuid='%s'" % (identifier, uuid)
     logging.info(q)
     cursor.execute(q)
