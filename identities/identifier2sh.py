@@ -95,7 +95,7 @@ def select_identifier(identifiers):
     for f in fields:
         if identifier is not None: break
         for iden in identifiers[f]:
-            if iden is not None:
+            if iden is not None and iden != 'None':
                 identifier = iden
                 if f == 'emails':
                     identifier = identifier.split("@")[0]
