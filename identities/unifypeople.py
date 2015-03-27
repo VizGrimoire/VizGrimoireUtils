@@ -109,11 +109,11 @@ def strPerson (person):
 
     return (person['name'] + " / " + person['email'])
 
-def getOptions():     
+def getOptions():
     parser = OptionParser(usage='Usage: %prog [options]', 
                           description='Unify identities',
                           version='0.1')
-    
+
     parser.add_option('-d', '--db-database', dest='db_database',
                      help='Output database name', default=None)
     parser.add_option('-u','--db-user', dest='db_user',
@@ -128,11 +128,11 @@ def getOptions():
                      default='3306')
     parser.add_option('-i', '--incremental', dest='incremental',
                       help='yes/no incremental analysis', default='yes')
-    
+
     (ops, args) = parser.parse_args()
-    
+
     return ops
-    
+
 
 def generate_upeople(personsById):
     upeople = []
@@ -144,6 +144,29 @@ def generate_upeople(personsById):
         upeople.append((id, uid))
 
     return upeople
+
+
+def create_schema_uids(cursor, db):
+    """ Create the schemas for upeople and identities tables.
+        This tables should always exists for unique identities in
+        any data source (no matter SCM exists or not) """
+
+    cursor.execute("DROP TABLE IF EXISTS upeople")
+    cursor.execute("""CREATE TABLE upeople(id int(11) NOT NULL,
+                                       identifier varchar(128),
+                                       PRIMARY KEY (id))
+                      ENGINE=MyISAM DEFAULT CHARSET=utf8""")
+    db.commit()
+
+    # Creating identities table
+    cursor.execute("DROP TABLE IF EXISTS identities")
+    cursor.execute("""CREATE TABLE identities (id int(11) NOT NULL AUTO_INCREMENT,
+                                           upeople_id int(11) NOT NULL,
+                                           identity VARCHAR(256) NOT NULL,
+                                           type VARCHAR(24),
+                                           PRIMARY KEY(id))
+                      ENGINE=MyISAM DEFAULT CHARSET=utf8""")
+    db.commit()
 
 
 def create_schema(cursor, db, upeople):
@@ -163,25 +186,11 @@ def create_schema(cursor, db, upeople):
     cursor.execute("ALTER TABLE people_upeople ENABLE KEYS")
     db.commit()
 
-    # Creating table upeople with a list of unique ids.
-    cursor.execute("DROP TABLE IF EXISTS upeople")
-    cursor.execute("""CREATE TABLE upeople(id int(11) NOT NULL,
-                                       identifier varchar(128),
-                                       PRIMARY KEY (id))
-                      ENGINE=MyISAM DEFAULT CHARSET=utf8""")
-    db.commit()
+    # Fill upeople table
     cursor.execute("""INSERT INTO upeople(id) 
                   SELECT DISTINCT(upeople_id) from people_upeople""")
 
-    # Creating identities table
-    cursor.execute("DROP TABLE IF EXISTS identities")
-    cursor.execute("""CREATE TABLE identities (id int(11) NOT NULL AUTO_INCREMENT, 
-                                           upeople_id int(11) NOT NULL,
-                                           identity VARCHAR(256) NOT NULL,
-                                           type VARCHAR(24),
-                                           PRIMARY KEY(id))
-                      ENGINE=MyISAM DEFAULT CHARSET=utf8""")
-    db.commit()
+    # Fill identities table
     cursor.execute("""INSERT INTO identities(upeople_id, identity)
                              SELECT distinct u.id, 
                                     p.name 
@@ -282,8 +291,8 @@ def update_schema(cursor, db, upeople):
                     query = "INSERT INTO identities(upeople_id, identity, type) " +\
                             " values(" + str(max_id) + ", '" + result[2] + "', 'email')"
                     execute_query(cursor, query)
-                    
-                    
+
+
 # Open database connection and get all data in people table
 # into people list.
 
@@ -300,6 +309,9 @@ cursor = db.cursor()
 if (check_tables(cursor) == False):
     print("Tables does not exists. Incremental off")
     incremental = False
+
+if not incremental:
+    create_schema_uids(cursor, db)
 
 query = """SELECT *
            FROM people, scmlog
@@ -340,8 +352,6 @@ for person in people:
     personsById[id] = {'name': name, 'email': email}
     # Is name in names?
     uidName = identitiesNames.find (name)
-    if uidName == 0:
-        identitiesNames.insert (name, id)
     # Is name in emails? (probably it is actually an email)
     uidNameEmail = identitiesEmails.find (name)
     # Is name, lowercased and dotted, in emails?
@@ -351,8 +361,6 @@ for person in people:
         uidEmail = 0
     else:
         uidEmail = identitiesEmails.find (email)
-    if uidEmail == 0:
-        identitiesEmails.insert (email, id)
     #foundIds = [uidName, uidNameEmail, uidEmail, uidNameEmailDotted]
     foundIds = [uidName, uidNameEmail, uidEmail]
     foundIds = [el for el in foundIds if el != 0]
@@ -363,8 +371,14 @@ for person in people:
         duplicates.append(id)
         for dup in duplicates:
             dupIds[dup] = foundIds[0]
-
-
+        # Use the unique id for inserting in identities tables mapping
+        # so the identifier is related to the unique identity
+        id = foundIds[0]
+    if uidName == 0:
+        identitiesNames.insert (name, id)
+    if uidEmail == 0:
+        identitiesEmails.insert (email, id)
+    
 # Uncomment next lines for debugging results
 
 #for id in sorted(dupIds):
@@ -376,6 +390,7 @@ for person in people:
 #print "== Email addresses =="
 #identitiesEmails.print_all(":Email: ")
 print str(len(dupIds)) + " duplicate ids found."
+print dupIds
 
 # Create unique people table
 # Each row is a people identifier, and a unique identifier
@@ -386,8 +401,6 @@ if not incremental:
     create_schema(cursor, db, upeople)
 else:
     update_schema(cursor, db, upeople)
-
-
 
 db.close()
 print "Done."

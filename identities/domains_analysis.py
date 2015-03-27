@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2012 Bitergia
+# Copyright (C) 2012-2015 Bitergia
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,12 +19,16 @@
 #
 # Authors :
 #       Daniel Izquierdo-Cortazar <dizquierdo@bitergia.com>
+#       Alvaro del Castillo <acs@bitergia.com>
 
 #
 # domains_analysis.py
 #
-# This scripts is based on the outcomes of unifypeople.py.
-# This will provide two tables: domains and upeople_domains
+# This scripts is based on the outcomes of unifypeople.py and sortinghat
+# This will provide three tables:
+#    domains
+#    upeople_domains for unifypeople
+#    uidentities_domains for sortinghat
 
 
 import logging
@@ -33,7 +37,7 @@ import sys
 import re
 from optparse import OptionGroup, OptionParser
 
-def create_tables(db, connector):
+def create_tables(db, connector, sortinghat = False):
 #   query = "DROP TABLE IF EXISTS domains"
 #   connector.execute(query)
 #   query = "DROP TABLE IF EXISTS upeople_domains"
@@ -63,6 +67,16 @@ def create_tables(db, connector):
            "PRIMARY KEY (id)," + \
            "UNIQUE KEY (upeople_id, domain_id, init)" + \
            ") ENGINE=MyISAM DEFAULT CHARSET=utf8"
+   if sortinghat:
+       query = "CREATE TABLE IF NOT EXISTS uidentities_domains (" + \
+               "id int(11) NOT NULL AUTO_INCREMENT," + \
+               "uuid varchar(128) NOT NULL," + \
+               "domain_id int(11) NOT NULL," + \
+               "init datetime," + \
+               "end datetime," + \
+               "PRIMARY KEY (id)," + \
+               "UNIQUE KEY (uuid, domain_id, init)" + \
+               ") ENGINE=MyISAM DEFAULT CHARSET=utf8"
    connector.execute(query)
 
    db.commit()
@@ -90,12 +104,12 @@ def execute_query(connector, query):
       return result1
    else:
       return []
-  
-def getOptions():     
+
+def getOptions():
     parser = OptionParser(usage='Usage: %prog [options]', 
                           description='Domains analysis detection using email addresses',
                           version='0.1')
-    
+
     parser.add_option('-d', '--db-database', dest='db_database',
                      help='Output database name', default=None)
     parser.add_option('-u','--db-user', dest='db_user',
@@ -108,9 +122,11 @@ def getOptions():
     parser.add_option('--db-port', dest='db_port',
                      help='Port of the host where database server is running',
                      default='3306')
-    
+    parser.add_option('-s', '--sortinghat', dest='sortinghat',
+                      action="store_true", help='Create sortinghat version')
+
     (ops, args) = parser.parse_args()
-    
+
     return ops
 
 def insert_domain(connector, name):
@@ -138,24 +154,45 @@ def insert_upeople_domain(connector, upeople_id, domain_id):
         # logging.info("Already inserted: " +str(upeople_id)+ " in domain "+ str(domain_id) + " in 1900-01-01")
         pass
 
+def insert_uidentity_domain(connector, uuid, domain_id):
+    q = "INSERT INTO uidentities_domains(uuid, domain_id, init, end) " + \
+            "VALUES('" + str(uuid) + "'," + str(domain_id) + "," + \
+            "'1900-01-01', '2100-01-01' );"
+    try:
+        execute_query(connector, q)
+    except:
+        # logging.info("Already inserted: " +str(upeople_id)+ " in domain "+ str(domain_id) + " in 1900-01-01")
+        pass
+
 
 def main(db):
-   cfg = getOptions()   
+   cfg = getOptions()
    db, connector = connect(cfg)
-   create_tables(db, connector)
-   query = "select upeople_id, identity from identities where type='email';"
-   people = execute_query(connector, query)   
+   create_tables(db, connector, cfg.sortinghat)
+   query = "select upeople_id, identity from identities where type='email'"
+   if (cfg.sortinghat):
+       # query = "select uuid, email from identities where email is not NULL and email<>'None'"
+       query = "select uuid, email from identities"
+   people = execute_query(connector, query)
    rexp = "(.*@)(.*)"
-   
+
    for person in people:
-      upeople_id = int(person[0])
+      if not cfg.sortinghat:
+         upeople_id = int(person[0])
+      else:
+         uuid = person[0]
       email = str(person[1])
-      if len(email) == 0:
-         domain_id = get_domain_id(connector, 'Unknown')
+
       if re.match(rexp, email):
          m = re.match(rexp, email)
          domain = str(m.groups()[1].split('.')[0])
          domain_id = get_domain_id(connector, domain)
-      insert_upeople_domain(connector, upeople_id, domain_id)
+      else:
+         domain_id = get_domain_id(connector, 'Unknown')
+
+      if not cfg.sortinghat:
+         insert_upeople_domain(connector, upeople_id, domain_id)
+      else:
+         insert_uidentity_domain(connector, uuid, domain_id)
 
 if __name__ == "__main__":main(sys.argv[1])
