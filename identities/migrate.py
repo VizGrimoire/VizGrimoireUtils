@@ -107,7 +107,7 @@ def enroll_identities(sh_db, identities, insert_orgs=False):
             except (NotFoundError, ValueError), e:
                 msg = "Error: %s - (%s, %s, %s, %s)" % (unicode(e), uuid, enrollment[0],
                                                         enrollment[1], enrollment[2])
-                print msg.enconde('UTF-8')
+                print msg.encode('UTF-8')
             except AlreadyExistsError, e:
                 pass
 
