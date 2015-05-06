@@ -103,9 +103,13 @@ public class Polarsys {
 				ncloc = measure.getValue();
 			}
 		}
-		// Metric tst_vol_idx = tests / (ncloc /1000)
-		obj.put("tst_vol_idx", tests / (ncloc /1000));
-		System.out.println("tst_vol_idx" + ": " + tests / (ncloc /1000));
+        try{
+		    // Metric tst_vol_idx = tests / (ncloc /1000)
+    		obj.put("tst_vol_idx", tests / (ncloc /1000));
+	    	System.out.println("tst_vol_idx" + ": " + tests / (ncloc /1000));
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+        }
 
 
 		try {

@@ -146,7 +146,10 @@ def insert_upeople(cursor, debug, identity):
 
 def insert_upeople_country(cursor, upeople_id, country, debug):    
     country_id = None
-    query = "SELECT id FROM countries WHERE name = '%s'" % (country)
+    if type(upeople_id) is str:
+        query = "SELECT code FROM countries WHERE name = '%s'" % (country)
+    else:
+        query = "SELECT id FROM countries WHERE name = '%s'" % (country)
     results = cursor.execute(query)
 
     if results == 0:
@@ -161,8 +164,7 @@ def insert_upeople_country(cursor, upeople_id, country, debug):
 
     try:
         if type(upeople_id) is str:
-            cursor.execute("INSERT INTO nationalities (country_id, uuid) VALUES (%s, '%s')"
-                           % (country_id, upeople_id))
+            cursor.execute("UPDATE profiles SET country_code = '%s' WHERE uuid = '%s'" % (country_id, upeople_id))
         else:
             cursor.execute("INSERT INTO upeople_countries (country_id, upeople_id) VALUES (%s, '%s')"
                            % (country_id, upeople_id))
@@ -248,16 +250,6 @@ def create_tables_countries(cursor, con):
             ") ENGINE=MyISAM DEFAULT CHARSET=utf8"
     cursor.execute(query)
 
-
-    # New table name used in Sorting Hat
-    query = "CREATE TABLE IF NOT EXISTS nationalities (" + \
-            "id int(11) NOT NULL AUTO_INCREMENT," + \
-            "uuid varchar(128) NOT NULL," + \
-            "country_id int(11) NOT NULL," + \
-            "PRIMARY KEY (id)" + \
-            ") ENGINE=MyISAM DEFAULT CHARSET=utf8"
-    cursor.execute(query)
-
     try:
         query = "CREATE INDEX upc_up ON upeople_countries (upeople_id);"
         cursor.execute(query)
@@ -311,9 +303,10 @@ def create_test_data(cursor, opts):
 
 
 def create_test_data_countries(cursor, opts):
-    test_countries = ['country1', 'country2', 'country3', 'country4', 'country5']
-    cursor.execute("DELETE FROM countries")
-    cursor.execute("DELETE FROM upeople_countries")
+    # test_countries = ['country1', 'country2', 'country3', 'country4', 'country5']
+    test_countries = ['Spain', 'United States of America', 'Italy', 'Greece', 'Argentina']
+    # cursor.execute("DELETE FROM countries")
+    # cursor.execute("DELETE FROM upeople_countries")
     try:
         cursor.execute("SELECT id FROM upeople")
         identities = cursor.fetchall()
