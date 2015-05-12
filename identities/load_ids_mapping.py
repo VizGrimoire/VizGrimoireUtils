@@ -113,8 +113,9 @@ def read_options():
     if not(opts.map and opts.data_file and opts.dbname and opts.dbuser):
         parser.error("--map and --file and --database are needed")
         sys.exit(1)
-    if (opts.map != "countries" and opts.map != "companies"):
-        print("Wrong map: " + opts.map + ". Only countries and companies supported.")
+    filt_sup = ["countries","companies","organizations"]
+    if (opts.map not in filt_sup):
+        print("Wrong map: " + opts.map + ". Only " + ",".join(filt_sup))
         sys.exit(1)
     if (opts.test != "true" and (opts.identity_type != "email" and opts.identity_type != "username"
         and opts.identity_type != "name")):
@@ -145,7 +146,10 @@ def insert_upeople(cursor, debug, identity):
 
 def insert_upeople_country(cursor, upeople_id, country, debug):    
     country_id = None
-    query = "SELECT id FROM countries WHERE name = '%s'" % (country)
+    if type(upeople_id) is str:
+        query = "SELECT code FROM countries WHERE name = '%s'" % (country)
+    else:
+        query = "SELECT id FROM countries WHERE name = '%s'" % (country)
     results = cursor.execute(query)
 
     if results == 0:
@@ -157,12 +161,32 @@ def insert_upeople_country(cursor, upeople_id, country, debug):
         print ("New country added " + country)
     else:
         country_id = cursor.fetchall()[0][0]
-    
+
     try:
-        cursor.execute("INSERT INTO upeople_countries (country_id, upeople_id) VALUES (%s, '%s')"
-                   % (country_id, upeople_id))
+        if type(upeople_id) is str:
+            cursor.execute("UPDATE profiles SET country_code = '%s' WHERE uuid = '%s'" % (country_id, upeople_id))
+        else:
+            cursor.execute("INSERT INTO upeople_countries (country_id, upeople_id) VALUES (%s, '%s')"
+                           % (country_id, upeople_id))
     except:
         print ("Mapping already exists for " + upeople_id + " " + country)
+
+def get_organization_id(cursor, organization, debug):
+    organization_id = None
+    query = "SELECT id FROM organizations WHERE name = '%s'" % (organization)
+    results = cursor.execute(query)
+
+    if results == 0:
+        query = "INSERT INTO organizations (name) VALUES ('%s')" % (organization)
+        if debug: print(query)
+        cursor.execute(query)
+        organization_id = cursor.lastrowid
+        print ("New organization added " + organization +  " " + str(organization_id))
+    else:
+        organization_id = cursor.fetchall()[0][0]
+
+    return organization_id
+
 
 def get_company_id(cursor, company, debug):
     company_id = None
@@ -189,9 +213,15 @@ def update_upeople_company(cursor, upeople_id, company, debug):
     except:
         print ("Mapping already exists for " + str(upeople_id) + " " + company)   
 
-def insert_upeople_company(cursor, upeople_id, company, debug):    
+def insert_upeople_company(cursor, upeople_id, company, debug):
     company_id = get_company_id(cursor, company, debug)
     query = "INSERT INTO upeople_companies (company_id, upeople_id) VALUES (%s, '%s')" % (company_id, upeople_id)
+    if (debug): print query
+    cursor.execute(query)
+
+def insert_upeople_organization(cursor, uuid, organization, debug):
+    org_id = get_organization_id(cursor, organization, debug)
+    query = "INSERT INTO enrollments (organization_id, uuid, end) VALUES (%s, '%s', '2100-01-01')" % (org_id, uuid)
     if (debug): print query
     cursor.execute(query)
 
@@ -210,7 +240,6 @@ def create_tables_countries(cursor, con):
             "name varchar(255) NOT NULL," + \
             "PRIMARY KEY (id)" + \
             ") ENGINE=MyISAM DEFAULT CHARSET=utf8"
-
     cursor.execute(query)
 
     query = "CREATE TABLE IF NOT EXISTS upeople_countries (" + \
@@ -270,14 +299,20 @@ def create_tables_companies(cursor, con):
 def create_test_data(cursor, opts):
     if (opts.map == "countries"): return create_test_data_countries(cursor, opts)
     elif (opts.map == "companies"): create_test_data_companies(cursor, opts)
+    elif (opts.map == "organizations"): create_test_data_organizations(cursor, opts)
 
 
 def create_test_data_countries(cursor, opts):
-    test_countries = ['country1', 'country2', 'country3', 'country4', 'country5']
-    cursor.execute("DELETE FROM countries")
-    cursor.execute("DELETE FROM upeople_countries")
-    cursor.execute("SELECT id FROM upeople")
-    identities = cursor.fetchall()
+    # test_countries = ['country1', 'country2', 'country3', 'country4', 'country5']
+    test_countries = ['Spain', 'United States of America', 'Italy', 'Greece', 'Argentina']
+    # cursor.execute("DELETE FROM countries")
+    # cursor.execute("DELETE FROM upeople_countries")
+    try:
+        cursor.execute("SELECT id FROM upeople")
+        identities = cursor.fetchall()
+    except:
+        cursor.execute("SELECT uuid FROM uidentities")
+        identities = cursor.fetchall()
 
     for identity in identities:
         country = test_countries[random.randint(0, len(test_countries) - 1)]
@@ -294,6 +329,16 @@ def create_test_data_companies(cursor, opts):
         company = test_companies[random.randint(0, len(test_companies) - 1)]
         insert_upeople_company(cursor, identity[0], company, opts.debug)
 
+def create_test_data_organizations(cursor, opts):
+    test_organizations = ['org1', 'org2', 'org3', 'org4', 'org5']
+    cursor.execute("DELETE FROM organizations")
+    cursor.execute("DELETE FROM enrollments")
+    cursor.execute("SELECT uuid FROM uidentities")
+    identities = cursor.fetchall()
+
+    for identity in identities:
+        org = test_organizations[random.randint(0, len(test_organizations) - 1)]
+        insert_upeople_organization(cursor, identity[0], org, opts.debug)
 
 if __name__ == '__main__':
     opts = None
@@ -306,7 +351,8 @@ if __name__ == '__main__':
     if opts.test:  # helper code to test without real data
         print("Creating test data ...")
         create_test_data(cursor, opts)
-        sys.exit(0)      
+        con.commit()
+        sys.exit(0)
 
     ids_file = parse_file(opts.data_file)
 

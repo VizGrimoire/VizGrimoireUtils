@@ -1,0 +1,48 @@
+exportPattern("^[[:alpha:]]+")
+exportMethods(
+  "initialize",
+  "CSV",
+  "GetAges",
+  "ProcessAges",
+  "GetActivity",
+  "JSON",
+  "PlotCharts",
+  "PlotDist",
+  "Plot",
+  "Pyramid",
+  "QuantilizeMonths",
+  "QuantilizeYears",
+  "Query",
+  "RegionTZ",
+  "run",
+  "show" 
+)
+exportClasses(
+  "EventsMonthly",
+  "ITSMonthly",
+  "ITSMonthlyChanged",
+  "ITSMonthlyClosed",
+  "ITSMonthlyLastClosed",
+  "ITSMonthlyOpen",
+  "ITSMonthlyVarious",
+  "ITSTicketsChangesTimes",
+  "ITSTicketsTimes",
+  "Demographics",
+  "Ages",
+  "AgesMulti",
+  "Query",
+  "TimedEvents",
+  "Times",
+  "TimeSeriesYears",
+  "TZCounts",
+  "TZCountsDST",
+  "SCMPeriodActivity",
+  "MLSTZ",
+  "Regions"
+)
+import("RMySQL")
+import("rjson")
+import("RColorBrewer")
+import("ggplot2")
+import("rgl")
+import("optparse")
