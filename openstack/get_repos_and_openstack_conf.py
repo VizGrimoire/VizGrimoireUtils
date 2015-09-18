@@ -16,10 +16,11 @@ with open(file_name, "r") as f:
     file2 = open(path+"repos", "w")
     repositories = []
     for projects in file:
-        projects_info = file[projects]['projects']
-        for repo in projects_info:
-            repositories.append("git://git.openstack.org/"+repo['repo'])
-            file2.write("git://git.openstack.org/"+repo['repo']+"\n")
+        project = file[projects]['deliverables']
+        for deliverables in project.keys():
+            for repo in project[deliverables]['repos']:
+                repositories.append("git://git.openstack.org/cgit/"+repo)
+                file2.write("git://git.openstack.org/cgit/"+repo+"\n")
 
 # string = list of repositories (format: repo,repo,repo...)
 repos = ""
