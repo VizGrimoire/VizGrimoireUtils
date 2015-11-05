@@ -168,6 +168,14 @@ if __name__ == '__main__':
             logging.info("Can't find identifier for %s" % uuid)
             updated += 1
     con.commit()
+
+    # Filter email addresses
+    q = "UPDATE uidentities "
+    q += "SET identifier = SUBSTRING_INDEX(SUBSTRING_INDEX(identifier, '@', 1), '@', -1) "
+    q += "WHERE identifier LIKE '%%@%%'";
+
+    cursor.execute(q)
+
     close_database(con)
     
     print("Total identities updated: %i " % (updated))
