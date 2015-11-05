@@ -788,7 +788,7 @@ def create_projects_db_info(projects, automator_file):
     parser = get_automator_parser(automator_file)
     user = parser.get('generic','db_user')
     passwd = parser.get('generic','db_password')
-    db = parser.get('generic','db_identities')
+    db = parser.get('generic','db_projects')
     scr_url = parser.get('gerrit','trackers')
 
     db = MySQLdb.connect(user = user, passwd = passwd, db = db, charset='utf8')
