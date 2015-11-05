@@ -34,6 +34,7 @@ import pprint
 import os.path
 import sys
 import urllib2, urllib
+import codecs
 
 def read_options():
     parser = OptionParser(usage="usage: %prog [options]",
@@ -790,7 +791,7 @@ def create_projects_db_info(projects, automator_file):
     db = parser.get('generic','db_identities')
     scr_url = parser.get('gerrit','trackers')
 
-    db = MySQLdb.connect(user = user, passwd = passwd, db = db)
+    db = MySQLdb.connect(user = user, passwd = passwd, db = db, charset='utf8')
     cursor = db.cursor()
     create_projects_schema(cursor)
     logging.info("Projects tables created")
@@ -888,7 +889,7 @@ if __name__ == '__main__':
         f = open(json_file,'w')
         f.write(projects_raw)
         f.close()
-    projects_raw = open(json_file, 'r').read()
+    projects_raw = codecs.open(json_file, 'r', 'utf-8').read()
     projects = json.loads(projects_raw)
     projects = projects['projects']
 
