@@ -41,7 +41,13 @@ class Database(object):
 
     def __init__(self, user, password, database, host='localhost', port='3306'):
         # Create an engine
-        self.url = URL('mysql', user, password, host, port, database,
+        try:
+            import MySQLdb
+            driver = 'mysql+mysqldb'
+        except ImportError:
+            driver = 'mysql+pymysql'
+
+        self.url = URL(driver, user, password, host, port, database,
                        query={'charset' : 'utf8'})
         self._engine = create_engine(self.url, poolclass=NullPool, echo=False)
         self._Session = sessionmaker(bind=self._engine)
@@ -523,7 +529,7 @@ def parse_args():
 
 def main():
     args = parse_args()
-    print args
+
     try:
         db = Database(args.db_user, args.db_password, args.db_name,
                       args.db_hostname, args.db_port)
