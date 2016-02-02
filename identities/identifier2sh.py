@@ -25,8 +25,8 @@
 from optparse import OptionParser
 import logging, MySQLdb, sys, random
 
-def open_database(myuser, mypassword, mydb):
-    con = MySQLdb.Connect(host="127.0.0.1",
+def open_database(myuser, mypassword, mydb, myhost):
+    con = MySQLdb.Connect(host=myhost,
                           port=3306,
                           user=myuser,
                           passwd=mypassword,
@@ -57,6 +57,11 @@ def read_options():
                       dest="dbpassword",
                       default="",
                       help="Database password")
+    parser.add_option("--db-host",
+                      action="store",
+                      dest="dbhost",
+                      default="127.0.0.1",
+                      help="Database host")
     parser.add_option("-g", "--debug",
                       action="store_true",
                       dest="debug",
@@ -147,7 +152,7 @@ if __name__ == '__main__':
         if username != 'y':
             sys.exit(0)
 
-    con = open_database(opts.dbuser, opts.dbpassword, opts.dbname)
+    con = open_database(opts.dbuser, opts.dbpassword, opts.dbname, opts.dbhost)
     cursor = con.cursor()
     check_uidentities_table(cursor, con)
     q = "SELECT uuid FROM uidentities "
