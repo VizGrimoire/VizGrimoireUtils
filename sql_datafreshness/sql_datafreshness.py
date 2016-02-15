@@ -41,7 +41,8 @@ QUERIES = {
     "db_sibyl": "SELECT MAX(submitted_on) FROM answers;",
     "db_releases": "SELECT MAX(updated_on) FROM releases;",
     "db_mediawiki": "SELECT MAX(date) FROM wiki_pages_revs;",
-    "db_downloads": "SELECT MAX(date) FROM downloads_month;"
+    "db_downloads": "SELECT MAX(date) FROM downloads_month;",
+    "db_eventizer": "SELECT MAX(updated) FROM events;"
 }
 
 def get_options():
@@ -79,7 +80,8 @@ def get_options():
 def get_databases(file_path):
     #dbs = ['db_octopus']
     dbs = ['db_cvsanaly','db_gerrit','db_mlstats','db_bicho','db_irc',
-            'db_pullpo','db_sibyl','db_releases','db_mediawiki','db_downloads']
+            'db_pullpo','db_sibyl','db_releases','db_mediawiki','db_downloads',
+            'db_eventizer']
 
     Config = ConfigParser.ConfigParser()
     Config.read(file_path)
