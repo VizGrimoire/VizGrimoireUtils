@@ -1,0 +1,19 @@
+[config]
+# root dir where dashboards are
+dashboards_root = /home
+
+log_file = /tmp/log
+
+db_user = root
+db_pass =
+
+# this is the threshold used if no ad-hoc threshold is added below
+default_threshold = 4
+
+# optional parameters to send notification mail
+email_from = luis@localhost
+#email_to = luis@localhost
+
+[databases]
+# database and maximum days before warning
+cvsanaly_wikimedia = 30
