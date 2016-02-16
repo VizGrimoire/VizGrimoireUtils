@@ -11,6 +11,7 @@ db_pass =
 default_threshold = 4
 
 # optional parameters to send notification mail
+# if no email_to is set, it won't send mail
 email_from = luis@localhost
 #email_to = luis@localhost
 
