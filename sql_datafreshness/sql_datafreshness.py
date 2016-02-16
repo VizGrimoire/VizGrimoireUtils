@@ -27,6 +27,7 @@ import logging
 import MySQLdb
 import datetime
 import smtplib
+import ConfigParser
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from argparse import ArgumentParser
@@ -45,35 +46,21 @@ QUERIES = {
     "db_eventizer": "SELECT MAX(updated) FROM events;"
 }
 
-def get_options():
+def get_args():
     parser = ArgumentParser(usage='Usage: %(prog)s [options]',
                             description='Checks data freshness in SQL databases',
                             version='0.1')
-    parser.add_argument('-t','--threshold', dest='threshold',
-                        help='Show data older than the threshold',
-                        required=False, type=int)
-    parser.add_argument('-d','--directory', dest='directory',
-                        help='Directory where automator environments are deployed',
-                        required=True)
     parser.add_argument('-g','--debug', dest='debug',
                         help='Debug mode, disabled by default',
                         required=False, action='store_true')
-    parser.add_argument('-l','--logfile', dest='logfile',
-                        help='Log file',
-                        required=True)
-    parser.add_argument('--from', dest='sender',
-                        help='Mail sender',
-                        required=True)
-    parser.add_argument('--to', dest='recipient',
-                        help='Mail recipient',
-                        required=True)
-    parser.add_argument('--db_user', dest='db_user',
-                        help='Database user',
-                        required=True)
-    parser.add_argument('--db_pass', dest='db_pass',
-                        help='Database password',
-                        required=False, default='')
+    parser.add_argument('--conf', dest='config_file',
+                        help='Configuration file',
+                        required=False)
     args = parser.parse_args()
+
+    if len(sys.argv)==1:
+        parser.print_help()
+        sys.exit(1)
 
     return args
 
@@ -129,7 +116,32 @@ def send_mail(text, subject, msg_from, msg_to):
     s.sendmail(msg_from, msg_to, msg.as_string())
     s.quit()
 
-def produce_report(data, threshold, msg_from, msg_to):
+def read_opts_file(file_name):
+    Config = ConfigParser.ConfigParser()
+    Config.read(file_name)
+
+    thresholds = {}
+    for x in Config.items('databases'):
+        thresholds[x[0]] = int(x[1])
+
+    opts = {}
+    opts['dashboards_root'] = Config.get('config','dashboards_root')
+    opts['log_file'] = Config.get('config','log_file')
+    opts['db_user'] = Config.get('config','db_user')
+    opts['db_pass'] = Config.get('config','db_pass')
+    opts['default_threshold'] = int(Config.get('config','default_threshold'))
+    try:
+        opts['email_from'] = Config.get('config','email_from')
+    except:
+        opts['email_from'] = ''
+    try:
+        opts['email_to'] = Config.get('config','email_to')
+    except:
+        opts['email_to'] = ''
+
+    return opts, thresholds
+
+def produce_report(data, general_threshold, adhoc_thresholds, msg_from, msg_to=''):
     body_msg = ""
     for p in data.keys():
         logging.info("env: %s" % p)
@@ -137,31 +149,47 @@ def produce_report(data, threshold, msg_from, msg_to):
         for db in data[p].keys():
             age = data[p][db]['days']
             dbname = data[p][db]['dbname']
-            logging.info('     %s: %s days' % (dbname, str(age)))
-            if age > threshold:
-                aux_lines.append(' %s: %s days' % (dbname, str(age)))
+
+            if adhoc_thresholds.has_key(dbname):
+                max_age = adhoc_thresholds[dbname]
+                logging.info('     %s: %s days (threshold = %s)' % (dbname,
+                            str(age), max_age))
+                if age > max_age:
+                    aux_lines.append(' %s: %s days (threshold = %s)' % (dbname,
+                                str(age), max_age))
+            else:
+                logging.info('     %s: %s days' % (dbname, str(age)))
+                if age > general_threshold:
+                    aux_lines.append(' %s: %s days' % (dbname, str(age)))
 
         if len(aux_lines) > 0:
             body_msg = body_msg + "\nenv: " + p + "\n"
             for al in aux_lines:
                 body_msg = body_msg + " " + str(al) + "\n"
     #end for
-    if len(body_msg) > 0:
-        msg_subject = 'SQL Data smells (> ' + str(threshold) + ' days)'
+    if len(body_msg) > 0 and len(msg_to) > 0:
+        msg_subject = 'SQL Data smells (> ' + str(general_threshold) + ' days)'
         send_mail(body_msg, msg_subject, msg_from, msg_to)
+        logging.debug("Mail sent to %s" % (msg_to))
+    else:
+        logging.debug("No mail sent")
 
 def main():
-    opts = get_options()
-    if opts.debug:
-        logging.basicConfig(filename=opts.logfile,level=logging.DEBUG,
+    args = get_args()
+    conf, thresholds = read_opts_file(args.config_file)
+    #print myopts
+
+    if args.debug:
+        logging.basicConfig(filename=conf["log_file"],level=logging.DEBUG,
                             format='%(asctime)s %(message)s')
     else:
-        logging.basicConfig(filename=opts.logfile,level=logging.INFO,
+        logging.basicConfig(filename=conf["log_file"],level=logging.INFO,
                             format='%(asctime)s %(message)s')
 
+    logging.info("---")
     logging.info("The owl is watching its SQL territory ..")
-    logging.debug("threshold = %s" % (str(opts.threshold)))
-    conf_files = find('conf/main.conf', opts.directory)
+    logging.debug("default_threshold = %s" % (str(conf['default_threshold'])))
+    conf_files = find('conf/main.conf', conf['dashboards_root'])
 
     result = {}
 
@@ -172,11 +200,12 @@ def main():
         for m in mydbs.items():
             aux = {}
             aux["dbname"] = m[1]
-            aux["days"] = check_db_freshness(m, opts.db_user, opts.db_pass)
+            aux["days"] = check_db_freshness(m, conf['db_user'], conf['db_pass'])
             result[c][m[0]] = aux
-        logging.debug("data gathered for %s" % c)
+        logging.debug("SQL data gathered for %s" % c)
 
-    produce_report(result, opts.threshold, opts.sender, opts.recipient)
+    produce_report(result, conf['default_threshold'], thresholds,
+                    conf['email_from'], conf['email_to'])
 
 
 if __name__ == '__main__':
