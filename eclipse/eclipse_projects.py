@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # This script manage the information about Eclipse projects
-#
+# 
 # Copyright (C) 2014 Bitergia
 #
 # This program is free software; you can redistribute it and/or modify
@@ -24,13 +24,15 @@
 #
 
 
-from ConfigParser import SafeConfigParser, NoOptionError
+from ConfigParser import SafeConfigParser
 import MySQLdb
 
 import json
 import logging
 from optparse import OptionParser
+import pprint
 import os.path
+import sys
 import urllib2, urllib
 import codecs
 
@@ -194,12 +196,13 @@ def get_mls_repos_dev(project, original = False):
                 # /mnt/mailman_archives/emft-dev.mbox
                 # local_url = "/mnt/mailman_archives/"+url.split("listinfo/")[1]+".mbox"
                 # New format: /mnt/mailman_archives/emft-dev.mbox/emft-dev.mbox
-                if "listinfo" not in url:
-                    logging.error("Wrong list URL: %s" % (url))
-                    return repos_list
-                name = url.split("listinfo/")[1]
-                local_url = "/mnt/mailman_archives/"+name+".mbox/"+name+".mbox"
-                repos_list.append(local_url)
+                logging.info(url)
+                try:
+                    name = url.split("listinfo/")[1]
+                    local_url = "/mnt/mailman_archives/"+name+".mbox/"+name+".mbox"
+                    repos_list.append(local_url)
+                except IndexError:
+                    logging.info("Error: is %s a mailing list?" % (url))
             else:
                 repos_list.append(url)
     return repos_list
@@ -582,7 +585,11 @@ def get_automator_repos(data_source, automator_file):
     elif data_source == "scr":
         repos = parser.get('gerrit','projects').split(",")
     elif data_source == "mls":
-        repos = parser.get('mlstats','mailing_lists').split(",")
+        fd = open(os.path.join(os.path.dirname(automator_file),"mlstats_mailing_lists.conf"))
+        lists = fd.readlines()
+        fd.close()
+        repos = [ml.replace('\n','') for ml in lists]
+        #repos = parser.get('mlstats','mailing_lists').split(",")
     elif data_source == "irc":
         logging.info(data_source + " repos list not yet supported")
 
@@ -701,16 +708,9 @@ def get_db_cursor_identities(automator_file):
         user = parser.get('generic','db_user')
         passwd = parser.get('generic','db_password')
         db = parser.get('generic','db_identities')
-        try:
-            host = parser.get('generic','db_host')
-        except NoOptionError:
-            host = None
 
         # db = MySQLdb.connect(user = user, passwd = passwd, db = db, charset="utf8", use_unicode=True)
-        if host:
-            db = MySQLdb.connect(user = user, passwd = passwd, db = db, host = host)
-        else:
-            db = MySQLdb.connect(user = user, passwd = passwd, db = db)
+        db = MySQLdb.connect(user = user, passwd = passwd, db = db)
         _cursor_identities = db.cursor()
 
     return _cursor_identities
@@ -750,7 +750,7 @@ def create_affiliations_identities(affiliations_file, automator_file):
     for person in committers:
         pdata = committers[person]
         npeople += 1
-        if not "affiliations" in pdata:
+        if not "affiliations" in pdata: 
             # no affiliation, put it in individual affiliation
             pdata["affiliations"] = {"0": {"name": "individual"}}
         npeople_aff += 1
@@ -798,17 +798,9 @@ def create_projects_db_info(projects, automator_file):
     user = parser.get('generic','db_user')
     passwd = parser.get('generic','db_password')
     db = parser.get('generic','db_projects')
-    try:
-        host = parser.get('generic','db_host')
-    except NoOptionError:
-            host = None
-
     scr_url = parser.get('gerrit','trackers')
 
-    if host:
-        db = MySQLdb.connect(user = user, passwd = passwd, db = db, charset='utf8', host=host)
-    else:
-        db = MySQLdb.connect(user = user, passwd = passwd, db = db, charset='utf8')
+    db = MySQLdb.connect(user = user, passwd = passwd, db = db, charset='utf8')
     cursor = db.cursor()
     create_projects_schema(cursor)
     logging.info("Projects tables created")
@@ -876,7 +868,7 @@ def show_changes(projects, automator_file):
                 repos_prj = get_scm_repos(projects[project])
                 repos_prj = [repo.split("/")[-1] for repo in repos_prj]
                 repos_prj = [repo.replace(".git","") for repo in repos_prj]
-                for repo in repos_prj:
+                for repo in repos_prj: 
                     if repo<>'': repos.append(repo)
             elif ds == "mls":
                 repos_prj = get_mls_repos(projects[project])
