@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # This script manage the information about Eclipse projects
-# 
+#
 # Copyright (C) 2014 Bitergia
 #
 # This program is free software; you can redistribute it and/or modify
@@ -708,9 +708,17 @@ def get_db_cursor_identities(automator_file):
         user = parser.get('generic','db_user')
         passwd = parser.get('generic','db_password')
         db = parser.get('generic','db_identities')
+        try:
+            host = parser.get('generic','db_host')
+        except:
+            host = None
+
 
         # db = MySQLdb.connect(user = user, passwd = passwd, db = db, charset="utf8", use_unicode=True)
-        db = MySQLdb.connect(user = user, passwd = passwd, db = db)
+        if host:
+            db = MySQLdb.connect(user=user, passwd=passwd, db=db, host=host)
+        else:
+            db = MySQLdb.connect(user=user, passwd=passwd, db=db)
         _cursor_identities = db.cursor()
 
     return _cursor_identities
@@ -750,7 +758,7 @@ def create_affiliations_identities(affiliations_file, automator_file):
     for person in committers:
         pdata = committers[person]
         npeople += 1
-        if not "affiliations" in pdata: 
+        if not "affiliations" in pdata:
             # no affiliation, put it in individual affiliation
             pdata["affiliations"] = {"0": {"name": "individual"}}
         npeople_aff += 1
@@ -799,8 +807,18 @@ def create_projects_db_info(projects, automator_file):
     passwd = parser.get('generic','db_password')
     db = parser.get('generic','db_projects')
     scr_url = parser.get('gerrit','trackers')
+    try:
+        host = parser.get('generic','db_host')
+    except:
+        host = None
 
-    db = MySQLdb.connect(user = user, passwd = passwd, db = db, charset='utf8')
+
+    # db = MySQLdb.connect(user = user, passwd = passwd, db = db, charset="utf8", use_unicode=True)
+    if host:
+        db = MySQLdb.connect(user=user, passwd=passwd, charset='utf8', db=db, host=host)
+    else:
+        db = MySQLdb.connect(user = user, passwd = passwd, db = db, charset='utf8')
+
     cursor = db.cursor()
     create_projects_schema(cursor)
     logging.info("Projects tables created")
@@ -868,7 +886,7 @@ def show_changes(projects, automator_file):
                 repos_prj = get_scm_repos(projects[project])
                 repos_prj = [repo.split("/")[-1] for repo in repos_prj]
                 repos_prj = [repo.replace(".git","") for repo in repos_prj]
-                for repo in repos_prj: 
+                for repo in repos_prj:
                     if repo<>'': repos.append(repo)
             elif ds == "mls":
                 repos_prj = get_mls_repos(projects[project])
