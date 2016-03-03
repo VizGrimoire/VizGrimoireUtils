@@ -39,7 +39,7 @@ QUERIES = {
     "db_bicho": "SELECT MAX(updated) FROM (SELECT changed_on AS updated FROM changes UNION SELECT submitted_on AS updated FROM issues UNION SELECT submitted_on AS updated FROM comments) t;",
     "db_irc": "SELECT MAX(date) FROM irclog;",
     "db_pullpo": "SELECT MAX(updated_at) FROM pull_requests;",
-    "db_sibyl": "SELECT MAX(submitted_on) FROM answers;",
+    "db_sibyl": "SELECT MAX(updated) FROM (SELECT submitted_on AS updated FROM answers UNION SELECT last_activity_at FROM questions )t;",
     "db_releases": "SELECT MAX(updated_on) FROM releases;",
     "db_mediawiki": "SELECT MAX(date) FROM wiki_pages_revs;",
     "db_downloads": "SELECT MAX(date) FROM downloads_month;",
