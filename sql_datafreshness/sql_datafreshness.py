@@ -22,6 +22,7 @@
 
 import os
 import sys
+import time
 import ConfigParser
 import logging
 import MySQLdb
@@ -58,6 +59,9 @@ def get_args():
                         required=False)
     parser.add_argument('-s','--send', dest='send',
                         help='Sends the information to the mail. Disabled by default.',
+                        required=False,action='store_true')
+    parser.add_argument('-f','--file', dest='file',
+                        help='Generates a file with the content of the report.',
                         required=False,action='store_true')
     args = parser.parse_args()
 
@@ -141,11 +145,15 @@ def read_opts_file(file_name):
         opts['email_to'] = Config.get('config','email_to')
     except:
         opts['email_to'] = ''
+    try:
+        opts['file_path'] = Config.get('config','file_path')
+    except:
+        opts['file_path'] = ''
     
 
     return opts, thresholds
 
-def produce_report(send, data, general_threshold, adhoc_thresholds, msg_from, msg_to=''):
+def produce_report(send, file_report_create, file_report_path, data, general_threshold, adhoc_thresholds, msg_from, msg_to=''):
     body_msg = ""
     for p in data.keys():
         logging.info("env: %s" % p)
@@ -180,6 +188,13 @@ def produce_report(send, data, general_threshold, adhoc_thresholds, msg_from, ms
 			logging.debug("Mail sent to %s" % (msg_to))
 		else:
 			logging.debug("We cant send the mail because you didn't specify where.")
+	if file_report_create:
+		if len(file_report_path) > 0:
+			target = open(file_report_path+"/mail_report_datafreshness.log."+time.strftime("%Y%m%d"), 'w')
+			target.write(body_msg)
+			target.close()
+		else:
+			logging.debug("We cant create the report because you didn't specify where.")
 		
     else:
         logging.debug("No report created")
@@ -214,7 +229,7 @@ def main():
             result[c][m[0]] = aux
         logging.debug("SQL data gathered for %s" % c)
 
-    produce_report(args.send,result, conf['default_threshold'], thresholds,
+    produce_report(args.send,args.file,conf['file_path'],result, conf['default_threshold'], thresholds,
                     conf['email_from'], conf['email_to'])
 
 
