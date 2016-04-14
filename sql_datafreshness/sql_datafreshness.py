@@ -56,6 +56,9 @@ def get_args():
     parser.add_argument('--conf', dest='config_file',
                         help='Configuration file',
                         required=False)
+    parser.add_argument('-s','--send', dest='send',
+                        help='Sends the information to the mail. Disabled by default.',
+                        required=False,action='store_true')
     args = parser.parse_args()
 
     if len(sys.argv)==1:
@@ -138,10 +141,11 @@ def read_opts_file(file_name):
         opts['email_to'] = Config.get('config','email_to')
     except:
         opts['email_to'] = ''
+    
 
     return opts, thresholds
 
-def produce_report(data, general_threshold, adhoc_thresholds, msg_from, msg_to=''):
+def produce_report(send, data, general_threshold, adhoc_thresholds, msg_from, msg_to=''):
     body_msg = ""
     for p in data.keys():
         logging.info("env: %s" % p)
@@ -167,12 +171,18 @@ def produce_report(data, general_threshold, adhoc_thresholds, msg_from, msg_to='
             for al in aux_lines:
                 body_msg = body_msg + " " + str(al) + "\n"
     #end for
-    if len(body_msg) > 0 and len(msg_to) > 0:
-        msg_subject = 'SQL Data smells (> ' + str(general_threshold) + ' days)'
-        send_mail(body_msg, msg_subject, msg_from, msg_to)
-        logging.debug("Mail sent to %s" % (msg_to))
+    
+    if len(body_msg) > 0:
+	if send:
+		if len(msg_to) > 0:
+			msg_subject = 'SQL Data smells (> ' + str(general_threshold) + ' days)'
+			send_mail(body_msg, msg_subject, msg_from, msg_to)
+			logging.debug("Mail sent to %s" % (msg_to))
+		else:
+			logging.debug("We cant send the mail because you didn't specify where.")
+		
     else:
-        logging.debug("No mail sent")
+        logging.debug("No report created")
 
 def main():
     args = get_args()
@@ -204,7 +214,7 @@ def main():
             result[c][m[0]] = aux
         logging.debug("SQL data gathered for %s" % c)
 
-    produce_report(result, conf['default_threshold'], thresholds,
+    produce_report(args.send,result, conf['default_threshold'], thresholds,
                     conf['email_from'], conf['email_to'])
 
 
@@ -215,3 +225,4 @@ if __name__ == '__main__':
         s = "Error: %s\n" % str(e)
         sys.stderr.write(s)
         sys.exit(1)
+
