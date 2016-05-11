@@ -35,7 +35,7 @@ from argparse import ArgumentParser
 
 QUERIES = {
     "db_cvsanaly": "SELECT MAX(date) FROM scmlog;",
-    "db_gerrit": "SELECT MAX(submitted_on) FROM issues;",
+    "db_gerrit": "SELECT MAX(mod_date) FROM issues_ext_gerrit;",
     "db_mlstats": "SELECT MAX(first_date) FROM messages;",
     "db_bicho": "SELECT MAX(updated) FROM (SELECT changed_on AS updated FROM changes UNION SELECT submitted_on AS updated FROM issues UNION SELECT submitted_on AS updated FROM comments) t;",
     "db_irc": "SELECT MAX(date) FROM irclog;",
