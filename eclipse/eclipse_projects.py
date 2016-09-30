@@ -36,6 +36,11 @@ import sys
 import urllib2, urllib
 import codecs
 
+PERCEVAL_BACKENDS=['bugzilla','bugzillarest','confluence','discourse',
+    'gerrit','git','github','gmane','jenkins','jira','kitsune','mbox',
+    'mediawiki','pipermail','remo','stackexchange','supybot','telegram']
+
+
 def read_options():
     parser = OptionParser(usage="usage: %prog [options]",
                           version="%prog 0.1")
@@ -183,6 +188,20 @@ def get_its_repos(project):
         repos_list.append(urllib.unquote(repo['query_url']))
     return repos_list
 
+def get_repo_from_project(project,backend):
+    # returns repo list based on the backend and the project dictionary
+    # empty list if backend is not present in the project
+    try:
+        repos = project[backend]
+        print(repos)
+        repos_list = []
+        for repo in repos:
+            repos_list.append(urllib.unquote(repo['url']))
+    except:
+        repos_list=[]
+
+    return repos_list
+
 # dev format in JSON
 def get_mls_repos_dev(project, original = False):
     repos_list = []
@@ -290,6 +309,11 @@ def get_repos_list_project(project, projects, data_source, url = None):
         repos = get_scr_repos(projects[project], url)
     elif data_source == "irc":
         repos = get_irc_repos(projects[project])
+    else:
+        # after the legacy data sources, we check the ones for Perceval
+        repos = get_repo_from_project(projects[project], data_source)
+        print(repos)
+
     return repos
 
 
@@ -861,6 +885,10 @@ def create_projects_db_info(projects, automator_file):
         insert_repos(projects_db[project], repos, "scr")
         repos = get_repos_list_project(project, projects, "irc")
         insert_repos(projects_db[project], repos, "irc")
+
+        for pb in PERCEVAL_BACKENDS:
+            repos = get_repos_list_project(project, projects, pb)
+            insert_repos(projects_db[project], repos, pb)
 
     logging.info("Projects repositories added")
 
