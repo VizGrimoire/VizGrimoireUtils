@@ -193,7 +193,6 @@ def get_repo_from_project(project,backend):
     # empty list if backend is not present in the project
     try:
         repos = project[backend]
-        print(repos)
         repos_list = []
         for repo in repos:
             repos_list.append(urllib.unquote(repo['url']))
@@ -312,7 +311,6 @@ def get_repos_list_project(project, projects, data_source, url = None):
     else:
         # after the legacy data sources, we check the ones for Perceval
         repos = get_repo_from_project(projects[project], data_source)
-        print(repos)
 
     return repos
 
