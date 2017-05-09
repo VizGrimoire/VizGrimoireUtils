@@ -177,7 +177,10 @@ def get_scr_repos(project, scr_url):
         if "gitroot" in repo:
             gerrit_project = repo.replace("http://git.eclipse.org/gitroot/","")
             gerrit_project = gerrit_project.replace(".git","")
-            repos_list.append(scr_url+"_"+gerrit_project)
+            if scr_url is not None:
+                repos_list.append(scr_url+"_"+gerrit_project)
+            else:
+                repos_list.append("git.eclipse.org_"+gerrit_project)
     return repos_list
 
 
